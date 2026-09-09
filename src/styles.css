@@ -1,0 +1,257 @@
+/* Zensea — le guide du handpan. Palette tirée de la DA du thème :
+   vert profond 2E5E46, papier F6F9F8, brume DFEAE4. */
+
+:root {
+  --vert: #2e5e46;
+  --vert-nuit: #0b1a13;
+  --vert-sombre: #16332a;
+  --papier: #f6f9f8;
+  --brume: #dfeae4;
+  --or: #d7c39a;
+  --serif: "Cormorant Garamond", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--vert-nuit);
+  color: var(--papier);
+  font-family: var(--sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+[hidden] { display: none !important; }
+
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* Repli sans WebGL : le panorama en fond, qui glisse lentement. */
+.fallback {
+  position: fixed; inset: 0;
+  background: #0b1a13 url('/foret/vondel-4k.jpg') center / auto 100% repeat-x;
+  animation: pan 90s linear infinite;
+}
+@keyframes pan { from { background-position-x: 0; } to { background-position-x: -4096px; } }
+
+/* Étalonnage : bords assombris et réchauffés, comme à travers un objectif. */
+.grade {
+  position: fixed; inset: 0; z-index: 5; pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 45%, rgba(30,18,5,.28) 100%),
+    linear-gradient(180deg, rgba(255,200,120,.05), rgba(0,0,0,0) 35%, rgba(20,12,4,.18));
+}
+
+/* ---- Voile de brume à l'entrée ---- */
+.veil {
+  position: fixed; inset: 0; z-index: 30; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 40%, rgba(255,250,240,1) 0%, rgba(255,232,195,1) 55%, rgba(236,200,150,1) 100%);
+  opacity: 0;
+}
+
+/* ---- Écran d'entrée ---- */
+.entry {
+  position: fixed; inset: 0; z-index: 20;
+  display: grid; place-items: center;
+  text-align: center;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+}
+.entry__bg {
+  position: absolute; inset: -6%;
+  background: url('/foret/vondel-mini.jpg') center 45% / cover no-repeat;
+  filter: blur(12px) saturate(1.05) brightness(0.62);
+  transform: scale(1.04);
+  animation: kenburns 28s ease-in-out infinite alternate;
+}
+@keyframes kenburns {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to   { transform: scale(1.12) translate3d(-1.5%, 1%, 0); }
+}
+.entry__vignette {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 55%, rgba(11,26,19,.1) 0%, rgba(11,26,19,.45) 60%, rgba(11,26,19,.85) 100%),
+    linear-gradient(180deg, rgba(11,26,19,.25), rgba(11,26,19,.05) 40%, rgba(11,26,19,.5));
+}
+.entry__inner {
+  position: relative; max-width: 620px;
+  opacity: 0; transform: translateY(10px);
+  animation: rise 1.6s cubic-bezier(.2,.7,.2,1) .25s forwards;
+}
+@keyframes rise { to { opacity: 1; transform: none; } }
+
+.entry__brand {
+  margin: 0 0 22px;
+  font: 500 13px/1 var(--sans);
+  letter-spacing: .42em; text-transform: uppercase;
+  color: var(--brume); opacity: .85;
+}
+.entry__title {
+  margin: 0; font-family: var(--serif); font-weight: 400;
+  font-size: clamp(44px, 9vw, 92px); line-height: .98; letter-spacing: -.01em;
+  color: var(--papier);
+}
+.entry__line { display: block; }
+.entry__line--em { font-style: italic; color: #eef5f1; }
+.entry__lead {
+  margin: 22px auto 0; max-width: 420px;
+  font-size: 17px; line-height: 1.5; color: rgba(246,249,248,.82);
+}
+.entry__ask {
+  margin: 38px 0 14px; font-size: 14px; letter-spacing: .02em;
+  color: rgba(246,249,248,.65);
+}
+.entry__actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+.entry__hint {
+  margin: 26px 0 0; font-size: 12.5px; letter-spacing: .06em;
+  color: rgba(246,249,248,.45); min-height: 1.4em;
+  transition: opacity .4s;
+}
+
+/* ---- Boutons ---- */
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 15px 24px; border-radius: 999px; border: 1px solid transparent;
+  font-size: 15px; font-weight: 500; letter-spacing: .01em;
+  transition: transform .25s cubic-bezier(.2,.7,.2,1), background .25s, border-color .25s, box-shadow .25s, opacity .3s;
+}
+.btn:active { transform: scale(.97); }
+.btn--primary {
+  background: var(--papier); color: var(--vert-sombre);
+  box-shadow: 0 10px 30px rgba(0,0,0,.25), 0 0 0 0 rgba(246,249,248,.0);
+}
+.btn--primary:hover { transform: translateY(-1px); box-shadow: 0 14px 34px rgba(0,0,0,.3), 0 0 0 6px rgba(246,249,248,.08); }
+.btn--ghost {
+  background: rgba(246,249,248,.06); color: var(--papier);
+  border-color: rgba(246,249,248,.28); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+.btn--ghost:hover { background: rgba(246,249,248,.12); border-color: rgba(246,249,248,.45); }
+.btn--big { padding: 17px 28px; font-size: 16px; }
+.btn__icon { display: inline-flex; }
+.btn__arrow { transition: transform .3s; }
+.btn--big:hover .btn__arrow { transform: translateX(4px); }
+.btn[disabled] { opacity: .5; pointer-events: none; }
+
+/* ---- HUD dans la forêt ---- */
+.hud { position: fixed; inset: 0; z-index: 10; pointer-events: none; }
+.hud > * { pointer-events: auto; }
+.hud__brand {
+  position: absolute; top: max(18px, env(safe-area-inset-top)); left: 22px; margin: 0;
+  font: 500 12px/1 var(--sans); letter-spacing: .42em; text-transform: uppercase;
+  color: rgba(246,249,248,.85); text-shadow: 0 1px 12px rgba(0,0,0,.35);
+  opacity: 0; transition: opacity 1.2s;
+}
+.hud__sound {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); right: 16px;
+  width: 42px; height: 42px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: rgba(11,26,19,.35); border: 1px solid rgba(246,249,248,.22);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: var(--papier); opacity: 0; transition: opacity 1.2s, background .25s;
+}
+.hud__sound:hover { background: rgba(11,26,19,.55); }
+.hud__sound .hud__sound-off { display: none; }
+.hud__sound[aria-pressed="false"] .hud__sound-on { display: none; }
+.hud__sound[aria-pressed="false"] .hud__sound-off { display: block; }
+.hud__hint {
+  position: absolute; left: 50%; top: 18%; transform: translateX(-50%);
+  margin: 0; padding: 9px 16px; border-radius: 999px;
+  font-size: 13px; letter-spacing: .04em; white-space: nowrap;
+  color: var(--papier); background: rgba(11,26,19,.32);
+  border: 1px solid rgba(246,249,248,.18);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  opacity: 0; transition: opacity 1s;
+}
+.hud__bottom {
+  position: absolute; left: 0; right: 0; bottom: max(28px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  /* Le conteneur couvre toute la largeur, y compris le bouton Marcher :
+     il ne doit pas intercepter le doigt, seuls ses enfants le font. */
+  pointer-events: none;
+}
+.hud__bottom > * { pointer-events: auto; }
+.hud__breathe { pointer-events: none; }
+.hud__breathe {
+  margin: 0; font-family: var(--serif); font-style: italic;
+  font-size: clamp(22px, 4vw, 30px); color: var(--papier);
+  text-shadow: 0 2px 20px rgba(0,0,0,.4);
+  opacity: 0; transition: opacity 2.4s ease;
+}
+/* La phrase qui annonce la musique : même voix que « Respirez », plus discrète. */
+.hud__murmure {
+  margin: 0; min-height: 1.3em;
+  font-family: var(--serif); font-style: italic; font-size: clamp(19px, 3.4vw, 25px);
+  color: var(--papier); text-shadow: 0 2px 20px rgba(0,0,0,.4);
+  opacity: 0; transition: opacity 2.6s ease;
+}
+.hud.is-musique .hud__murmure { opacity: 1; }
+.hud.is-musique .hud__murmure:empty { opacity: 0; }
+#choose { opacity: 0; transform: translateY(8px); transition: opacity 1.4s, transform 1.4s cubic-bezier(.2,.7,.2,1); }
+
+/* Bouton de marche : on le maintient enfoncé. */
+.hud__walk {
+  position: absolute; left: 18px; bottom: max(28px, env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  width: 78px; height: 78px; border-radius: 50%;
+  background: rgba(11,26,19,.38); border: 1px solid rgba(246,249,248,.28);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  color: var(--papier); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
+  justify-content: center; opacity: 0; transform: translateY(8px);
+  transition: opacity 1.4s, transform 1.4s cubic-bezier(.2,.7,.2,1), background .2s, box-shadow .2s;
+  touch-action: none;
+}
+.hud__walk.is-on { background: rgba(246,249,248,.92); color: var(--vert-sombre); box-shadow: 0 0 0 8px rgba(246,249,248,.14); }
+.hud.is-settled .hud__walk { opacity: 1; transform: none; }
+.hud__walk--run { left: 106px; transition-delay: .15s; }
+@media (max-width: 480px) { .hud__walk { width: 70px; height: 70px; font-size: 11px; } .hud__walk--run { left: 98px; } }
+
+/* États pilotés par main.js */
+.hud.is-live .hud__brand, .hud.is-live .hud__sound { opacity: 1; }
+.hud.is-live .hud__hint { opacity: 1; }
+.hud.is-settled .hud__hint { opacity: 0; }
+.hud.is-live .hud__breathe { opacity: 1; }
+.hud.is-settled .hud__breathe { opacity: 0; }
+.hud.is-settled #choose { opacity: 1; transform: none; }
+
+/* Sortie de l'écran d'entrée */
+.entry.is-leaving .entry__inner { animation: sink 1.1s cubic-bezier(.6,0,.8,.4) forwards; }
+@keyframes sink { to { opacity: 0; transform: translateY(-14px) scale(1.02); filter: blur(6px); } }
+.entry.is-leaving .entry__bg { transition: transform 2.2s cubic-bezier(.3,0,.2,1), filter 2.2s; transform: scale(1.35); filter: blur(4px) brightness(.9); }
+.entry.is-leaving .entry__vignette { transition: opacity 1.8s .3s; opacity: 0; }
+
+/* Carte du handpan choisi */
+.carte { text-align: center; margin: 0; }
+.carte__nom { margin: 0; font-family: var(--serif); font-size: clamp(26px, 4.6vw, 36px); color: var(--papier); text-shadow: 0 2px 20px rgba(0,0,0,.45); }
+.carte__sous { margin: 4px 0 0; font-size: 14px; letter-spacing: .04em; color: rgba(246,249,248,.8); text-shadow: 0 1px 12px rgba(0,0,0,.45); }
+.hud.is-atelier .hud__hint { display: none; }
+#guide { opacity: 1; transform: none; }
+/* Handpan choisi : il occupe le bas de l'écran, la carte remonte en haut. */
+.hud.is-choisi .hud__bottom { bottom: auto; top: max(64px, calc(env(safe-area-inset-top) + 52px)); gap: 12px; }
+.hud.is-choisi .hud__murmure { font-size: clamp(17px, 3vw, 22px); }
+
+/* Toast de placeholder pour l'étape suivante */
+.toast {
+  position: fixed; left: 50%; bottom: 120px; transform: translateX(-50%) translateY(8px);
+  z-index: 15; padding: 12px 18px; border-radius: 14px;
+  background: rgba(11,26,19,.72); color: var(--papier); font-size: 14px;
+  border: 1px solid rgba(246,249,248,.18);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  opacity: 0; transition: opacity .4s, transform .4s; pointer-events: none;
+  max-width: 88vw; text-align: center;
+}
+.toast.is-on { opacity: 1; transform: translateX(-50%); }
+
+@media (prefers-reduced-motion: reduce) {
+  .entry__bg, .fallback { animation: none; }
+}
+@media (max-width: 480px) {
+  .entry__lead { font-size: 15.5px; }
+  .entry__ask { margin-top: 30px; }
+  .btn { padding: 14px 20px; font-size: 14.5px; }
+}
