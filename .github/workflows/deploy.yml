@@ -1,27 +1,24 @@
 name: Déploiement GitHub Pages
 
-# À chaque push sur main : build Vite, puis publication via l'API Pages.
-# Prérequis (une fois, dans Settings → Pages) : Source = « GitHub Actions ».
+# À chaque push sur main : build Vite, puis commit du résultat sur la branche
+# gh-pages, que GitHub Pages sert (Settings → Pages → Source : « Deploy from a
+# branch », gh-pages, / root). Le jeton du workflow ne peut pas créer le site
+# Pages lui-même, d'où ce détour — le même que pour le guide Hydelis.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-publish:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,13 +27,21 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run build
-      # Crée le site Pages au premier passage (source « GitHub Actions ») ;
-      # sans cette étape, deploy-pages répond 404.
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Publier le build sur gh-pages
+        run: |
+          git fetch origin gh-pages
+          git worktree add /tmp/site origin/gh-pages
+          cd /tmp/site
+          git checkout -B gh-pages origin/gh-pages
+          # On remplace tout sauf .git et assets/ : les anciens bundles hachés
+          # restent servis pour qu'un HTML encore en cache ne casse jamais.
+          find . -maxdepth 1 ! -name .git ! -name assets ! -name . -exec rm -rf {} +
+          mkdir -p assets
+          cp -r "$GITHUB_WORKSPACE"/dist/assets/. assets/
+          find "$GITHUB_WORKSPACE"/dist -mindepth 1 -maxdepth 1 ! -name assets -exec cp -r {} . \;
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Déploiement Pages — ${GITHUB_SHA::7}" || { echo "Aucun changement à déployer."; exit 0; }
+          git push origin gh-pages

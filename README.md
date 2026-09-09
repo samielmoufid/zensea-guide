@@ -23,13 +23,15 @@ npm run build      # build de production dans dist/
 ## Déploiement
 
 Chaque push sur `main` déclenche `.github/workflows/deploy.yml` : build
-Vite, puis publication sur GitHub Pages. Le site est servi sur
+Vite, puis commit du résultat sur la branche `gh-pages`, que GitHub Pages
+sert. Le site est servi sur
 **https://guide.zensea.fr** ; `public/CNAME` maintient le domaine à chaque
 déploiement.
 
 Mise en place, une seule fois :
 
-1. Dépôt GitHub → Settings → Pages → Source : **GitHub Actions**.
+1. Dépôt GitHub → Settings → Pages → Source : **Deploy from a branch**,
+   branche `gh-pages`, dossier `/ (root)`.
 2. Shopify → Paramètres → Domaines → zensea.fr → ajouter un enregistrement
    DNS `CNAME` : hôte `guide`, cible `samielmoufid.github.io`.
 3. Settings → Pages → Custom domain : `guide.zensea.fr`, puis cocher
