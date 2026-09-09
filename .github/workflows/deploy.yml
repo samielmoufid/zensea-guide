@@ -1,9 +1,11 @@
 name: Déploiement GitHub Pages
 
 # À chaque push sur main : build Vite, puis commit du résultat sur la branche
-# gh-pages, que GitHub Pages sert (Settings → Pages → Source : « Deploy from a
-# branch », gh-pages, / root). Le jeton du workflow ne peut pas créer le site
-# Pages lui-même, d'où ce détour — le même que pour le guide Hydelis.
+# gh-pages. Le workflow self-deploy.yml présent SUR gh-pages publie alors via
+# l'API Pages (actions/deploy-pages). Ce détour existe parce que le jeton ne
+# peut ni créer le site Pages ni déployer depuis une autre branche, et que le
+# pipeline interne « build from branch » ne se déclenche pas de façon fiable
+# — le même montage que pour le guide Hydelis.
 on:
   push:
     branches: [main]
@@ -33,9 +35,11 @@ jobs:
           git worktree add /tmp/site origin/gh-pages
           cd /tmp/site
           git checkout -B gh-pages origin/gh-pages
-          # On remplace tout sauf .git et assets/ : les anciens bundles hachés
-          # restent servis pour qu'un HTML encore en cache ne casse jamais.
-          find . -maxdepth 1 ! -name .git ! -name assets ! -name . -exec rm -rf {} +
+          # On remplace tout sauf .git, .github (le workflow d'auto-déploiement
+          # doit rester : le jeton n'a pas le droit de toucher aux workflows) et
+          # assets/ : les anciens bundles hachés restent servis pour qu'un HTML
+          # encore en cache ne casse jamais.
+          find . -maxdepth 1 ! -name .git ! -name .github ! -name assets ! -name . -exec rm -rf {} +
           mkdir -p assets
           cp -r "$GITHUB_WORKSPACE"/dist/assets/. assets/
           find "$GITHUB_WORKSPACE"/dist -mindepth 1 -maxdepth 1 ! -name assets -exec cp -r {} . \;
