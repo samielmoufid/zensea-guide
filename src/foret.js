@@ -350,67 +350,132 @@ export class Foret {
   }
 
   // ---- Le corps -------------------------------------------------------------
-  // Ce qu'on voit de soi en baissant les yeux : jambes de lin sombre,
-  // chaussures, bras et mains. Éclairés par le panorama lui-même (carte
-  // d'environnement) et par un soleil placé là où il est dans la photo, pour
-  // que la peau et le tissu prennent la même lumière que la forêt.
+  // Ce qu'on voit de soi en baissant les yeux : la poitrine sous la chemise,
+  // les bras, des mains à cinq doigts, les jambes de lin sombre et les
+  // chaussures. Tout est construit à partir de capsules et de sphères aux
+  // proportions humaines, éclairé par le panorama lui-même et par un soleil
+  // placé là où il est dans la photo. Le corps s'incline légèrement quand
+  // on baisse la tête, comme le vrai.
   _corps() {
-    const lin = new THREE.MeshStandardMaterial({ color: 0x2f342e, roughness: 0.95 })
-    const manche = new THREE.MeshStandardMaterial({ color: 0xe6dfcf, roughness: 0.9 })
-    const cuir = new THREE.MeshStandardMaterial({ color: 0x3a2a1e, roughness: 0.6 })
-    const peau = new THREE.MeshStandardMaterial({ color: 0xd8b08e, roughness: 0.65 })
+    const peau = new THREE.MeshStandardMaterial({ color: 0xd9b394, roughness: 0.62 })
+    const chemise = new THREE.MeshStandardMaterial({ color: 0xe8e1d1, roughness: 0.92 })
+    const pantalon = new THREE.MeshStandardMaterial({ color: 0x2f342e, roughness: 0.95 })
+    const cuir = new THREE.MeshStandardMaterial({ color: 0x2b2118, roughness: 0.55 })
+    const semelle = new THREE.MeshStandardMaterial({ color: 0x1a1512, roughness: 0.8 })
+    const capsule = (r, l, mat) => new THREE.Mesh(new THREE.CapsuleGeometry(r, l, 5, 14), mat)
+    const boule = (r, mat, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), mat); m.scale.set(sx, sy, sz); return m }
+
     this.corps = new THREE.Group()
-    const jambe = (x) => {
-      const g = new THREE.Group(); g.position.set(x, -0.78, -0.14)     // hanche, un peu en avant de la tête
-      const cuisse = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.36, 4, 12), lin); cuisse.position.y = -0.2
+
+    // Pas de torse : sous l'œil, il masquerait mains et pieds — c'est le
+    // choix de toutes les vues subjectives.
+    this.torse = new THREE.Group(); this.corps.add(this.torse)
+
+    // Une main : paume, quatre doigts à trois phalanges, un pouce à deux.
+    // Les doigts pointent vers le bas quand le bras pend, légèrement repliés.
+    const main = (cote) => {
+      const g = new THREE.Group()
+      const paume = boule(0.045, peau, 1, 1.25, 0.42); paume.position.y = -0.045
+      g.add(paume)
+      const doigt = (x, longueur, courbure, epaisseur) => {
+        let parent = g, y = -0.095
+        const seg = [0.36, 0.3, 0.24].map(k => k * longueur)
+        const ray = [1, 0.92, 0.82].map(k => k * epaisseur)
+        let px = x, pz = 0
+        for (let i = 0; i < 3; i++) {
+          const art = new THREE.Group(); art.position.set(px, y, pz)
+          art.rotation.x = courbure * (i === 0 ? 0.6 : 1) * (cote > 0 ? 1 : 1)
+          const ph = capsule(ray[i], seg[i], peau); ph.position.y = -seg[i] / 2
+          art.add(ph); parent.add(art)
+          parent = art; px = 0; pz = 0; y = -seg[i]
+        }
+      }
+      doigt(-0.03 * cote, 0.19, 0.42, 0.0095)      // index
+      doigt(-0.01 * cote, 0.21, 0.5, 0.0095)       // majeur
+      doigt(0.01 * cote, 0.195, 0.55, 0.009)       // annulaire
+      doigt(0.03 * cote, 0.16, 0.6, 0.0082)        // auriculaire
+      // Pouce : part du côté de la paume, vers l'avant.
+      const pouce = new THREE.Group(); pouce.position.set(-0.045 * cote, -0.04, 0.012)
+      pouce.rotation.set(0.5, 0, -0.9 * cote)
+      const p1 = capsule(0.011, 0.045, peau); p1.position.y = -0.03
+      const p2g = new THREE.Group(); p2g.position.y = -0.058; p2g.rotation.x = 0.35
+      const p2 = capsule(0.01, 0.035, peau); p2.position.y = -0.022
+      p2g.add(p2); pouce.add(p1, p2g); g.add(pouce)
+      // La paume regarde vers la cuisse.
+      g.rotation.y = -Math.PI / 2 * cote
+      return g
+    }
+
+    // Un bras : épaule → haut du bras → coude → avant-bras → poignet → main.
+    const bras = (cote) => {
+      const epaule = new THREE.Group(); epaule.position.set(0.215 * cote, -0.3, 0.07)
+      const haut = capsule(0.05, 0.24, chemise); haut.position.y = -0.14
+      const coude = new THREE.Group(); coude.position.y = -0.29
+      const avant = capsule(0.042, 0.22, chemise); avant.position.y = -0.13
+      const manchette = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.046, 0.03, 16), chemise); manchette.position.y = -0.255
+      const poignet = capsule(0.03, 0.03, peau); poignet.position.y = -0.285
+      const m = main(cote); m.position.y = -0.3
+      coude.add(avant, manchette, poignet, m)
+      epaule.add(haut, coude)
+      epaule.userData = { coude, main: m }
+      return epaule
+    }
+
+    // Une jambe : hanche → cuisse → genou → tibia → chaussure.
+    const jambe = (cote) => {
+      const hanche = new THREE.Group(); hanche.position.set(0.1 * cote, -0.83, 0.02)
+      const cuisse = capsule(0.078, 0.34, pantalon); cuisse.position.y = -0.2
       const genou = new THREE.Group(); genou.position.y = -0.4
-      const tibia = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.34, 4, 12), lin); tibia.position.y = -0.19
-      const pied = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.3), cuir); pied.position.set(0, -0.395, -0.09)
-      genou.add(tibia, pied); g.add(cuisse, genou)
-      g.userData = { genou }
-      return g
+      const tibia = capsule(0.06, 0.32, pantalon); tibia.position.y = -0.19
+      const ourlet = new THREE.Mesh(new THREE.CylinderGeometry(0.066, 0.066, 0.03, 16), pantalon); ourlet.position.y = -0.36
+      const chaussure = new THREE.Group(); chaussure.position.set(0, -0.39, -0.03)
+      const empeigne = capsule(0.05, 0.16, cuir); empeigne.rotation.x = Math.PI / 2; empeigne.position.set(0, -0.02, -0.06); empeigne.scale.set(1.05, 0.9, 1)
+      const talon = boule(0.05, cuir, 1, 0.9, 0.9); talon.position.set(0, -0.02, 0.05)
+      const sem = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.022, 0.29), semelle); sem.position.set(0, -0.06, -0.03)
+      chaussure.add(empeigne, talon, sem)
+      genou.add(tibia, ourlet, chaussure)
+      hanche.add(cuisse, genou)
+      hanche.userData = { genou }
+      return hanche
     }
-    // Des bras, on ne voit que l'avant-bras et la main : le haut du bras est
-    // hors du champ, contre l'œil. Le groupe pivote au coude.
-    const bras = (x) => {
-      const g = new THREE.Group(); g.position.set(x, -0.5, -0.12)      // coude
-      const avant = new THREE.Mesh(new THREE.CapsuleGeometry(0.038, 0.24, 4, 12), manche); avant.position.y = -0.13
-      const poignet = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.033, 0.03, 12), peau); poignet.position.y = -0.27
-      const main = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 10), peau); main.scale.set(0.85, 1.2, 0.42); main.position.y = -0.33
-      const doigts = new THREE.Mesh(new THREE.CapsuleGeometry(0.026, 0.06, 3, 8), peau); doigts.position.set(0, -0.4, 0); doigts.scale.set(1.7, 1, 0.65)
-      g.add(avant, poignet, main, doigts)
-      return g
-    }
-    this.jG = jambe(-0.11); this.jD = jambe(0.11)
-    this.bG = bras(-0.21); this.bD = bras(0.21)
+
+    this.jG = jambe(-1); this.jD = jambe(1)
+    this.bG = bras(-1); this.bD = bras(1)
     this.corps.add(this.jG, this.jD, this.bG, this.bD)
     this.scene.add(this.corps)
-    this.soleil = new THREE.DirectionalLight(0xffe0b0, 1.6)
+    this.soleil = new THREE.DirectionalLight(0xffe0b0, 1.8)
     this.soleil.position.copy(SUN_DIR).multiplyScalar(10)
-    this.scene.add(this.soleil, new THREE.AmbientLight(0xcfd8c8, 0.35))
+    this.scene.add(this.soleil, new THREE.AmbientLight(0xd6dccf, 0.3))
   }
 
   _animerCorps(t) {
     const ph = this.phasePas, a = this.allure, e = this.effort
-    // Amplitude de balancement : modeste en marchant, large en courant.
-    const amp = (0.55 + 0.55 * e) * a
+    const amp = (0.5 + 0.55 * e) * a
     const sw = Math.sin(ph)
-    this.jG.rotation.x = sw * amp
-    this.jD.rotation.x = -sw * amp
-    // Le genou plie quand la jambe passe derrière (et davantage en courant).
-    this.jG.userData.genou.rotation.x = Math.max(0, Math.sin(ph + Math.PI)) * (0.7 + 0.9 * e) * a
-    this.jD.userData.genou.rotation.x = Math.max(0, Math.sin(ph)) * (0.7 + 0.9 * e) * a
-    // Avant-bras en opposition des jambes ; au repos ils pendent un peu vers
-    // l'avant, en courant ils se relèvent presque à l'horizontale.
-    const repos = Math.sin(t * 0.9) * 0.03
-    const base = -0.35 - 0.95 * e * a
-    this.bG.rotation.x = base - sw * amp * 0.55 + repos
-    this.bD.rotation.x = base + sw * amp * 0.55 + repos
-    this.bG.rotation.z = 0.1; this.bD.rotation.z = -0.1
-    // Le corps est sous la tête, tourné avec elle, mais ne bouge pas avec
-    // le balancement de la tête.
+    // Jambes : balancement depuis la hanche, genou qui plie quand la jambe
+    // passe derrière — davantage en courant.
+    this.jG.rotation.x = sw * amp + 0.2
+    this.jD.rotation.x = -sw * amp + 0.2
+    this.jG.userData.genou.rotation.x = -Math.max(0, Math.sin(ph + Math.PI)) * (0.7 + 0.9 * e) * a
+    this.jD.userData.genou.rotation.x = -Math.max(0, Math.sin(ph)) * (0.7 + 0.9 * e) * a
+    // Bras : en opposition. Au repos ils pendent, à peine écartés, et
+    // respirent ; en courant les coudes se plient et les mains montent.
+    const respire = Math.sin(t * 0.9) * 0.02
+    // Rotation positive autour de X = le membre pendant part vers l'avant.
+    this.bG.rotation.x = -sw * amp * 0.45 + respire + 0.28
+    this.bD.rotation.x = sw * amp * 0.45 + respire + 0.28
+    this.bG.rotation.z = 0.12; this.bD.rotation.z = -0.12
+    const coude = (0.1 + 0.9 * e) * (0.35 + 0.65 * a) + 0.22
+    this.bG.userData.coude.rotation.x = coude
+    this.bD.userData.coude.rotation.x = coude
+    // Le torse respire.
+    const souffle = 1 + Math.sin(t * 1.1) * 0.012
+    this.torse.scale.set(1, souffle, souffle)
+    // Le corps est sous la tête, tourné avec elle, et s'incline un peu vers
+    // l'avant quand on baisse les yeux — sans suivre le balancement.
     this.corps.position.set(this.pos.x, 0, this.pos.z)
-    this.corps.rotation.y = this.yaw
+    const penche = 0.08
+    this.corps.rotation.set(penche, this.yaw, 0, 'YXZ')
   }
 
   // ---- Brume au sol -------------------------------------------------------
@@ -533,7 +598,7 @@ export class Foret {
   // Remet la vue de départ : l'orientation actuelle du téléphone redevient
   // l'horizon, et les décalages au doigt sont effacés.
   recentrer() {
-    if (this.gyroBrut) { this.gyroYaw0 = this.gyroBrut.yaw; this.gyroPitch0 = this.gyroBrut.pitch }
+    if (this.gyroBrut) this.gyroYaw0 = this.gyroBrut.yaw
     this.dragYaw = 0; this.dragPitch = 0; this.inertie = null
   }
 
@@ -553,7 +618,7 @@ export class Foret {
     this.marche = false; this.suivre = false; this.allure = 0
     this.yaw0 = yaw
     this.dragYaw = 0; this.dragPitch = 0; this.inertie = null
-    if (this.gyroBrut) { this.gyroYaw0 = this.gyroBrut.yaw; this.gyroPitch0 = this.gyroBrut.pitch }
+    if (this.gyroBrut) this.gyroYaw0 = this.gyroBrut.yaw
     this.yaw = yaw; this.pitch = 0
   }
   // Appui simple (sans glissé) : transmis à l'atelier.
@@ -624,8 +689,11 @@ export class Foret {
       // Lissage des mesures : le gyroscope tremble, pas la tête.
       this.gyro.yaw = lerpAngle(this.gyro.yaw, this.gyroBrut.yaw, 0.12)
       this.gyro.pitch = lerp(this.gyro.pitch, this.gyroBrut.pitch, 0.12)
+      // Le tangage est absolu : téléphone vertical = regard droit devant,
+      // penché en arrière = vers le ciel. Seul le cap (boussole, arbitraire)
+      // est calé sur la vue de départ.
       yawT = this.yaw0 + (this.gyro.yaw - this.gyroYaw0) + this.dragYaw
-      pitchT = (this.gyro.pitch - this.gyroPitch0) + this.dragPitch
+      pitchT = this.gyro.pitch + this.dragPitch
     } else {
       const par = this.mobile ? 0 : 1
       yawT = this.yaw0 + this.dragYaw - this.mouseX * 9 * DEG * par

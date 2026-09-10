@@ -42,22 +42,38 @@ export class Ambiance {
   }
 
   // À appeler depuis un geste utilisateur (obligatoire sur mobile).
+  // Doit s'exécuter DANS le geste, sans attente asynchrone avant : Safari
+  // ne laisse démarrer le son que là. Sur iPhone, l'interrupteur silencieux
+  // coupe aussi le Web Audio sauf si la page se déclare en « lecture »,
+  // comme un lecteur vidéo — c'est le rôle d'audioSession.
   unlock() {
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback' } catch {}
     if (this.ctx) {
-      if (this.ctx.state === 'suspended') this.ctx.resume()
+      if (this.ctx.state !== 'running') this.ctx.resume()
+      this._silence()
       return true
     }
     try {
       const AC = window.AudioContext || window.webkitAudioContext
       if (!AC) return false
       this.ctx = new AC()
-      if (this.ctx.state === 'suspended') this.ctx.resume()
+      if (this.ctx.state !== 'running') this.ctx.resume()
       this._graphe()
+      this._silence()
       return true
     } catch {
       this.ctx = null
       return false
     }
+  }
+
+  // Un échantillon muet joué dans le geste : c'est ce qui « débloque »
+  // réellement la sortie audio sur iOS.
+  _silence() {
+    try {
+      const c = this.ctx, b = c.createBuffer(1, 1, 22050)
+      const s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start(0)
+    } catch {}
   }
 
   _graphe() {
@@ -230,6 +246,7 @@ export class Ambiance {
   // Démarre l'ambiance et la fait monter en douceur.
   start(fadeIn = 5, densite = 1) {
     if (!this.ctx) return
+    if (this.ctx.state !== 'running') this.ctx.resume()
     this.densite = densite
     this.running = true
     this.enabled = true

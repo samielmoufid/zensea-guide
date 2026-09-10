@@ -206,7 +206,8 @@ function entrerAtelier() {
   }, { passive: true })
 }
 
-btnSon.addEventListener('click', () => entrer(true))
+// Le déverrouillage audio se fait ici, dans le clic, avant toute attente.
+btnSon.addEventListener('click', () => { ambiance.unlock(); entrer(true) })
 btnSilence.addEventListener('click', () => entrer(false))
 
 // Un glissé dans la forêt fait disparaître l'indication plus tôt.
