@@ -53,6 +53,36 @@ const pret = (async () => {
 })
 btnSon.disabled = true; btnSilence.disabled = true
 
+// ---- Le corps ------------------------------------------------------------
+// Les photos glissent dans le champ quand on baisse les yeux (le montage
+// correspond à un regard à ~60° vers le bas), suivent le balancement de la
+// tête, et à chaque pas la jambe avant s'éloigne pendant que l'autre se
+// rapproche, les bras en opposition.
+const corps2d = $('#corps2d')
+const calques = Object.fromEntries([...corps2d.querySelectorAll('.corps2d__c')].map(el => [el.dataset.c, el]))
+const DEG = Math.PI / 180
+function animerCorps() {
+  if (!foret) return
+  if (foret.autre || foret.intro < 0.9) { corps2d.classList.add('is-off'); return }
+  corps2d.classList.remove('is-off')
+  const p = foret.pitch
+  // 0 = hors champ (regard à l'horizon) … 1 = en place (regard à 62° en bas).
+  let k = Math.min(1, Math.max(0, (-p - 14 * DEG) / (48 * DEG)))
+  k = 1 - Math.pow(1 - k, 2)
+  const h = corps2d.offsetHeight || 1
+  const bob = (foret.bobY || 0) * (h * 1.6)
+  const roll = -(foret.rollCorps || 0) / DEG * 0.6
+  corps2d.style.transform = `translateY(${(1 - k) * 105}%) translateY(${bob}px) rotate(${roll}deg)`
+  const ph = foret.phasePas || 0, a = foret.allure || 0, e = foret.effort || 0
+  const amp = h * (0.05 + 0.06 * e) * a
+  const sw = Math.sin(ph), cw = Math.cos(ph)
+  const sc = 1 + 0.06 * a
+  calques['jambe-g'].style.transform = `translateY(${-sw * amp}px) scale(${1 - sw * 0.05 * a})`
+  calques['jambe-d'].style.transform = `translateY(${sw * amp}px) scale(${1 + sw * 0.05 * a})`
+  calques['main-g'].style.transform = `translate(${cw * amp * 0.25}px, ${sw * amp * 0.7}px)`
+  calques['main-d'].style.transform = `translate(${-cw * amp * 0.25}px, ${-sw * amp * 0.7}px)`
+}
+
 // Déclarés avant la boucle de rendu, qui démarre tout de suite.
 let arrive = false
 let musiqueLancee = false
@@ -64,7 +94,9 @@ if (foret) {
     if (ambiance.running) ambiance.setCourse(foret.effort * foret.allure)
     if (ambiance.hp) ambiance.setMusique(foret.distanceMusique(), foret.angleMusique())
     if (musiqueLancee && !arrive && foret.distanceMusique() < 6) arrivee()
-    foret.rendu(); raf = requestAnimationFrame(boucle)
+    foret.rendu()
+    animerCorps()
+    raf = requestAnimationFrame(boucle)
   }
   boucle()
   document.addEventListener('visibilitychange', () => {

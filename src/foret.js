@@ -81,7 +81,6 @@ export class Foret {
     this._poussieres()
     this._feuilles()
     this._brume()
-    this._corps()
     this._controles()
     this.resize()
     window.addEventListener('resize', () => this.resize())
@@ -733,7 +732,6 @@ export class Foret {
       this.phasePas = 0
     }
     if (this.autre) {
-      this.corps.visible = false
       // Dans l'atelier : pas de marche, on est debout puis assis.
       this.autre.assis = lerp(this.autre.assis, this.autre.choisi ? 1 : 0, 0.03)
       this.camera.position.set(0, -0.35 * this.autre.assis, 0)
@@ -744,8 +742,7 @@ export class Foret {
       this.renderer.render(this.autre.scene, this.camera)
       return
     }
-    this.corps.visible = ease > 0.6
-    this._animerCorps(t)
+    this.bobY = bobY; this.rollCorps = roll
     this.camera.position.set(this.pos.x, this.pos.y + bobY, this.pos.z)
     this.camera.rotation.set(this.pitch + pitchIntro + respire, this.yaw, roll, 'YXZ')
     if (Math.abs(this.camera.fov - fov) > 0.01) { this.camera.fov = fov; this.camera.updateProjectionMatrix() }
