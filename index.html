@@ -14,8 +14,8 @@
   <link rel="preload" as="image" href="./foret/vondel-mini.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
-  <script type="module" crossorigin src="./assets/index-CkQZoax7.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-CjqnDU3P.css">
+  <script type="module" crossorigin src="./assets/index-B3jAKzPx.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-BwR3iZtP.css">
 </head>
 <body>
   <!-- La scène WebGL vit derrière tout le reste. -->
@@ -23,13 +23,14 @@
   <div id="fallback" class="fallback" hidden aria-hidden="true"></div>
   <div class="grade" aria-hidden="true"></div>
 
-  <!-- Le corps : de vraies photos de mains et de jambes, posées sur la vue
-       et animées. Quatre calques pour que bras et jambes bougent séparément. -->
+  <!-- Le corps : de vraies photos, posées sur la vue. Cinq poses (repos,
+       marche gauche/droite, course gauche/droite) enchaînées à chaque pas. -->
   <div id="corps2d" class="corps2d" aria-hidden="true">
-    <img class="corps2d__c" data-c="jambe-g" src="./corps/jambe-g.png" alt="">
-    <img class="corps2d__c" data-c="jambe-d" src="./corps/jambe-d.png" alt="">
-    <img class="corps2d__c" data-c="main-g" src="./corps/main-g.png" alt="">
-    <img class="corps2d__c" data-c="main-d" src="./corps/main-d.png" alt="">
+    <img class="corps2d__c is-on" data-c="repos" src="./corps/repos.png" alt="">
+    <img class="corps2d__c" data-c="marche-g" src="./corps/marche-g.png" alt="">
+    <img class="corps2d__c" data-c="marche-d" src="./corps/marche-d.png" alt="">
+    <img class="corps2d__c" data-c="course-g" src="./corps/course-g.png" alt="">
+    <img class="corps2d__c" data-c="course-d" src="./corps/course-d.png" alt="">
   </div>
 
   <!-- Voile de transition : brume qui se lève à l'entrée. -->
