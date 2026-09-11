@@ -39,7 +39,7 @@ jobs:
           # doit rester : le jeton n'a pas le droit de toucher aux workflows) et
           # assets/ : les anciens bundles hachés restent servis pour qu'un HTML
           # encore en cache ne casse jamais.
-          find . -maxdepth 1 ! -name .git ! -name .github ! -name assets ! -name . -exec rm -rf {} +
+          find . -maxdepth 1 ! -name .git ! -name assets ! -name . -exec rm -rf {} +
           mkdir -p assets
           cp -r "$GITHUB_WORKSPACE"/dist/assets/. assets/
           find "$GITHUB_WORKSPACE"/dist -mindepth 1 -maxdepth 1 ! -name assets -exec cp -r {} . \;
