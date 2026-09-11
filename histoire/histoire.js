@@ -149,11 +149,13 @@ if (mobile && typeof DeviceOrientationEvent !== 'undefined') {
 }
 
 // ---- Rendu --------------------------------------------------------------------
+let portrait = false
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false)
   camera.aspect = innerWidth / innerHeight
   // En portrait, on recule pour que le panneau tienne dans la largeur.
-  camera.position.z = camera.aspect < 0.8 ? 4.2 + (0.8 - camera.aspect) * 4.5 : 4.2
+  camera.position.z = camera.aspect < 0.8 ? 4.6 + (0.8 - camera.aspect) * 5.2 : 4.2
+  portrait = camera.aspect < 0.8
   camera.updateProjectionMatrix()
 }
 addEventListener('resize', resize); resize()
@@ -170,7 +172,7 @@ function rendu() {
     if (i === actuel) {
       // Arrive de loin, en s'éclaircissant ; puis flotte et suit le regard.
       const z = lerp(-3.2, 0, e), s = lerp(0.82, 1, e)
-      p.g.position.set(p.decal * (camera.aspect > 1 ? 1 : 0), flotte, z)
+      p.g.position.set(p.decal * (camera.aspect > 1 ? 1 : 0), flotte + (portrait ? 0.62 : 0), z)
       p.g.scale.setScalar(s)
       p.g.rotation.set(-py * 3 * DEG, px * 6 * DEG + lerp(-18 * DEG, 0, e), 0)
       let op = e
@@ -179,7 +181,7 @@ function rendu() {
     } else if (i === precedent) {
       // S'en va en basculant, s'éloigne dans la brume.
       const z = lerp(0, 2.6, e), s = lerp(1, 1.12, e)
-      p.g.position.set(lerp(p.decal * (camera.aspect > 1 ? 1 : 0), -1.4, e), flotte + lerp(0, 0.5, e), z)
+      p.g.position.set(lerp(p.decal * (camera.aspect > 1 ? 1 : 0), -1.4, e), flotte + (portrait ? 0.62 : 0) + lerp(0, 0.5, e), z)
       p.g.scale.setScalar(s)
       p.g.rotation.set(0, lerp(px * 6 * DEG, 42 * DEG, e), lerp(0, -4 * DEG, e))
       p.mat.uniforms.uOpacity.value = 1 - e; p.matR.uniforms.uOpacity.value = 1 - e

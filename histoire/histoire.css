@@ -18,9 +18,11 @@ body { background: var(--nuit); color: var(--papier); font-family: var(--sans); 
 /* Les chapitres sont tous superposés ; seul l'actif est visible. */
 .chapitres { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
 .chapitre { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 8vh 7vw; opacity: 0; pointer-events: none; }
-.chapitre h2, .chapitre p, .chapitre .btn { max-width: 34ch; will-change: transform, opacity; }
-.chapitre h2 { margin: 0 0 14px; font: 400 clamp(30px, 5.2vw, 58px)/1.05 var(--serif); letter-spacing: -.01em; text-wrap: balance; text-shadow: 0 2px 30px rgba(0,0,0,.45); }
-.chapitre p { margin: 0; font-size: clamp(15px, 1.6vw, 19px); line-height: 1.55; color: rgba(246,249,248,.86); text-shadow: 0 1px 18px rgba(0,0,0,.5); }
+.bloc { max-width: 36ch; padding: 22px 26px; border-radius: 22px;
+  background: radial-gradient(ellipse at 50% 50%, rgba(11,26,19,.62) 0%, rgba(11,26,19,.38) 55%, rgba(11,26,19,0) 100%); }
+.chapitre h2, .chapitre p, .chapitre .btn { will-change: transform, opacity; }
+.chapitre h2 { margin: 0 0 12px; font: 400 clamp(28px, 4.8vw, 54px)/1.06 var(--serif); letter-spacing: -.01em; text-wrap: balance; text-shadow: 0 2px 30px rgba(0,0,0,.45); }
+.chapitre p { margin: 0; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.55; color: rgba(246,249,248,.92); text-shadow: 0 1px 18px rgba(0,0,0,.5); }
 .chapitre .btn { display: inline-flex; gap: 10px; align-items: center; margin-top: 26px; padding: 15px 24px; border-radius: 999px;
   background: var(--papier); color: #16332a; text-decoration: none; font-weight: 500; font-size: 15px; pointer-events: auto; box-shadow: 0 10px 30px rgba(0,0,0,.3); }
 /* Zones : où le texte lévite. */
@@ -42,8 +44,13 @@ body { background: var(--nuit); color: var(--papier); font-family: var(--sans); 
 .indice { position: fixed; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 10; margin: 0;
   font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: rgba(246,249,248,.55); animation: souffle 2.4s ease-in-out infinite; transition: opacity .6s; }
 @keyframes souffle { 50% { transform: translate(-50%, -6px); } }
-@media (max-width: 640px) {
-  .chapitre { padding: 10vh 6vw; }
-  .chapitre[data-zone="gauche"], .chapitre[data-zone="droite"] { justify-content: flex-end; padding-bottom: 14vh; }
+/* Téléphone : le panneau occupe le haut, le texte vit en dessous, jamais
+   l'un sur l'autre. Toutes les zones deviennent « bas, centré ». */
+@media (max-width: 640px), (max-aspect-ratio: 4/5) {
+  .chapitre, .chapitre[data-zone] { justify-content: flex-end; align-items: center; text-align: center; padding: 0 5vw calc(9vh + env(safe-area-inset-bottom)); }
+  .bloc { max-width: 100%; padding: 16px 14px; background: none; }
+  .chapitre h2 { font-size: clamp(26px, 7.4vw, 34px); margin-bottom: 8px; }
+  .chapitre p { font-size: 16px; line-height: 1.5; }
+  .points { right: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .indice { animation: none; } }
