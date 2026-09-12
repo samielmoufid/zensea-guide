@@ -115,25 +115,6 @@ export function toileQuatrieme() {
   return c
 }
 
-// Couverture de secours (le temps que la vraie soit livrée) — même titre.
-export function toileCouverture() {
-  const c = toile(), g = c.getContext('2d')
-  const grad = g.createLinearGradient(0, 0, W * 0.2, H)
-  grad.addColorStop(0, '#2e5e46'); grad.addColorStop(1, '#0f2a1e')
-  g.fillStyle = grad; g.fillRect(0, 0, W, H)
-  fougere(g, W * 0.85, H * 0.95, 1.6, '#d7c39a', 0.2)
-  g.textAlign = 'left'; g.fillStyle = 'rgba(246,249,248,.75)'
-  g.font = '400 22px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'
-  g.fillText('L A   M A I S O N   Z E N S E A', 78, 128)
-  g.fillStyle = '#f6f9f8'; g.font = '400 108px "Cormorant Garamond", Georgia, serif'
-  g.fillText('Le handpan,', 74, 300); g.fillText('du premier geste', 74, 412); g.fillText('au premier morceau', 74, 524)
-  g.font = '400 30px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif'; g.fillStyle = 'rgba(246,249,248,.8)'
-  g.fillText('Tout ce qu’il faut savoir sur le Ré mineur Kurd.', 78, 600)
-  g.textAlign = 'center'; g.font = 'italic 400 28px "Cormorant Garamond", Georgia, serif'
-  g.fillText('Offert avec chaque instrument Zensea · zensea.fr', W / 2, H - 90)
-  return c
-}
-
 function toileTranche() {
   const c = document.createElement('canvas'); c.width = 128; c.height = 64
   const g = c.getContext('2d')
@@ -351,7 +332,7 @@ export class Livre {
     for (let p = 1; p <= this.nPages; p++) liste.push([`${this.base}page-${String(p).padStart(2, '0')}.jpg`, p + 1])
     this._chargement = (async () => {
       const okCouv = await une(...liste[0])
-      if (!okCouv) this._appliquer(0, this._texCanvas(toileCouverture()))
+      if (!okCouv) this.mats[0].color.set(0x1d3b2c) // sans image : toile vert profond, sans texte
       for (let i = 1; i < liste.length; i++) await une(...liste[i])
     })()
     return this._chargement

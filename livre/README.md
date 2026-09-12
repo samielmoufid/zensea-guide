@@ -2,8 +2,7 @@
 
 Dix-neuf pages intérieures livrées par Sami (DA Zensea, portrait 1024×1536),
 rangées dans `public/livre/page-01.jpg` … `page-19.jpg` (JPEG qualité 86).
-La couverture va dans `public/livre/couverture.jpg` ; en son absence, une
-couverture de secours est dessinée sur canvas (`toileCouverture`).
+La couverture (photo, même format) est dans `public/livre/couverture.jpg`.
 
 Dans le guide (`src/livre.js`), le livre lévite au milieu du sentier dès
 l'arrivée ; on le touche, il vient dans les mains et s'ouvre. Pages qui
@@ -15,6 +14,7 @@ quatrième de couverture (dessinée).
 
 | Page | Titre | Contenu |
 |---|---|---|
+| couv. | Le handpan, du premier geste au premier morceau | Couverture photo (mains sur le handpan doré, sous-bois), `public/livre/couverture.jpg` |
 | 01 | Vous n'avez besoin de rien savoir | Introduction, « comment lire ce livre » (pages 3 à 5, puis 11 à 15) |
 | 02 | Cinq mots à connaître, et c'est tout | Schéma : ding, champs de notes, épaule, gu, corde de rebord |
 | 03 | La fausse note n'existe pas sur cet instrument | Piano vs handpan ; le La / Si bémol, signature du Kurd |
