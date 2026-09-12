@@ -14,9 +14,9 @@
   <link rel="preload" as="image" href="./foret/sentier-mini.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
-  <script type="module" crossorigin src="./assets/guide-0mM0botb.js"></script>
-  <link rel="modulepreload" crossorigin href="./assets/three.module-BkI3AWpe.js">
-  <link rel="stylesheet" crossorigin href="./assets/guide-65kg_nWE.css">
+  <script type="module" crossorigin src="./assets/guide-OgkyUr72.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/three.module-DcUqw2JH.js">
+  <link rel="stylesheet" crossorigin href="./assets/guide-BD6exzLI.css">
 </head>
 <body>
   <!-- La scène WebGL vit derrière tout le reste. -->
@@ -85,6 +85,35 @@
         <span class="btn__arrow" aria-hidden="true">→</span>
       </button>
     </div>
+
+    <!-- Le livre ouvert : navigation dans les pages. -->
+    <div id="lecture" class="lecture" hidden>
+      <button id="livre-fermer" class="lecture__fermer" type="button" aria-label="Refermer le livre">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        <span>Refermer</span>
+      </button>
+      <p id="lecture-hint" class="lecture__hint">Glissez ou tirez un coin pour tourner · double appui pour approcher une page</p>
+      <div class="lecture__bas">
+        <button id="livre-plein" class="lecture__plein" type="button">Lire en grand</button>
+        <div class="lecture__nav">
+          <button id="livre-prev" class="lecture__fleche" type="button" aria-label="Page précédente">‹</button>
+          <span id="livre-num" class="lecture__num">Couverture</span>
+          <button id="livre-next" class="lecture__fleche" type="button" aria-label="Page suivante">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- La loupe : une page en pleine résolution, à pincer. -->
+  <div id="loupe" class="loupe" hidden>
+    <div class="loupe__zone"><img alt="Page du guide" draggable="false"></div>
+    <div class="loupe__bar">
+      <button class="loupe__prev lecture__fleche" type="button" aria-label="Page précédente">‹</button>
+      <span class="loupe__num lecture__num"></span>
+      <button class="loupe__next lecture__fleche" type="button" aria-label="Page suivante">›</button>
+      <button class="loupe__close" type="button">Revenir au livre</button>
+    </div>
+    <p class="loupe__hint">Pincez ou touchez deux fois pour agrandir</p>
   </div>
 
 </body>
