@@ -1,7 +1,17 @@
 # Le livre numérique du handpan
 
-Pages livrées par Sami (générées dans la DA Zensea, format portrait 1024×1536),
-à récupérer dans les fichiers Shopify (`livre-01` … ) et à ranger ici.
+Dix-neuf pages intérieures livrées par Sami (DA Zensea, portrait 1024×1536),
+rangées dans `public/livre/page-01.jpg` … `page-19.jpg` (JPEG qualité 86).
+La couverture va dans `public/livre/couverture.jpg` ; en son absence, une
+couverture de secours est dessinée sur canvas (`toileCouverture`).
+
+Dans le guide (`src/livre.js`), le livre lévite au milieu du sentier dès
+l'arrivée ; on le touche, il vient dans les mains et s'ouvre. Pages qui
+plient en tournant, coin qu'on tire, balayage, double appui pour approcher
+une page, « Lire en grand » (loupe 2D à pincer, `src/loupe.js`) pour le texte
+fin sur téléphone. Dans l'atelier, le bouton « Ouvrir le guide » l'appelle.
+Ordre des faces : couverture, garde, pages 1–19, page blanche, garde de fin,
+quatrième de couverture (dessinée).
 
 | Page | Titre | Contenu |
 |---|---|---|
@@ -20,8 +30,9 @@ Pages livrées par Sami (générées dans la DA Zensea, format portrait 1024×15
 | 13 | Frappez trois notes ensemble, appelez ça un accord | Ré mineur, Fa majeur, Si♭ majeur ; progression Rém → Si♭ → Fa → Lam |
 | 14 | Une semaine pour que ça devienne un instrument | Jours 1 à 5, le piège de la semaine deux |
 | 15 | Votre handpan n'est pas un instrument solitaire | Avec un autre handpan, guitare/piano (Dm, F, Bb, C, Am, Gm), backing track, chant, s'enregistrer |
-| 16+ | *à venir* | |
+| 16 | Deux secondes après chaque séance, et il durera trente ans | Entretien : sueur, chiffon, huile une fois par mois, ce qu'il ne faut jamais faire (à faire / à ne jamais faire) |
+| 17 | Un handpan ne se désaccorde pas tout seul | Le choc, l'empilement, le choc thermique ; où le ranger, en avion, s'il se désaccorde quand même |
+| 18 | Dix questions, dix réponses courtes | Solfège, temps par jour, mailloches, son moins beau qu'en vidéo, voisins, enfants, couleurs, tenue de note, gamme, corde de rebord |
+| 19 | Une dernière chose | Ce que Zensea vous garantit (deux ans, trente jours, accordeur partenaire, réponse humaine), zensea.fr, contact@zensea.fr |
 
-Le livre annonce vingt pages. Dans le guide, il s'ouvrira dans l'atelier,
-à côté du handpan choisi (bouton « Ouvrir le guide »), avec le moteur de
-livre 3D du guide Hydelis (pages qui se tournent, zoom, sommaire).
+Le livre annonce vingt pages : couverture + dix-neuf pages intérieures.

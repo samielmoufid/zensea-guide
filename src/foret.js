@@ -19,11 +19,11 @@ const lerpAngle = (a, b, k) => {
 // Position du soleil dans le panorama (mesurée sur l'image : pixel le plus
 // lumineux) et direction du temple (le pavillon de l'autre côté du bassin).
 // Repère : le centre de la photo est à yaw 90°, et yaw décroît vers la droite.
-const TEMPLE_YAW = 77.4 * DEG   // le bout du sentier, où le temple est posé
+export const TEMPLE_YAW = 77.4 * DEG   // le bout du sentier, où le temple est posé
 const TEMPLE_RATIO = 0.3752
 const SUN_YAW = 152.6 * DEG
 const SUN_EL = 25.3 * DEG
-const SUN_DIR = new THREE.Vector3(-Math.sin(SUN_YAW) * Math.cos(SUN_EL), Math.sin(SUN_EL), -Math.cos(SUN_YAW) * Math.cos(SUN_EL))
+export const SUN_DIR = new THREE.Vector3(-Math.sin(SUN_YAW) * Math.cos(SUN_EL), Math.sin(SUN_EL), -Math.cos(SUN_YAW) * Math.cos(SUN_EL))
 
 const RAYON = 60          // rayon de la sphère
 const PORTEE = 36         // distance maximale de marche depuis le centre
@@ -71,6 +71,8 @@ export class Foret {
     this.cibleYaw = null
     this.suivre = false          // les pieds vont vers la musique, la tête reste libre
     this.autre = null            // scène de l'atelier quand on y est
+    this.lecture = false         // le livre est ouvert : le doigt lui appartient
+    this.apres = null            // rendu par-dessus la scène (le livre), même caméra
 
     this.tPrec = performance.now()
     this.t0 = this.tPrec
@@ -529,6 +531,8 @@ export class Foret {
     const el = this.canvas
     let down = false, lx = 0, ly = 0, vx = 0, vy = 0, dernierTap = 0, doigt = null
     const debut = e => {
+      // En lecture, le doigt tourne les pages : le regard ne bouge pas.
+      if (this.lecture) { down = false; doigt = null; this.inertie = null; return }
       // Un seul doigt pilote le regard. Un deuxième doigt (pincement) annule
       // le glissé en cours : mélanger les deux faisait n'importe quoi.
       if (doigt !== null && e.pointerId !== doigt) { down = false; doigt = null; this.inertie = null; return }
@@ -557,7 +561,7 @@ export class Foret {
     const debut0 = debut
     const debut2 = e => { x0 = e.clientX; y0 = e.clientY; t0 = performance.now(); debut0(e) }
     const fin = e => {
-      if (e.pointerId !== doigt) return
+      if (e.pointerId !== doigt || this.lecture) return
       doigt = null
       if (down) this.inertie = { vx, vy }
       down = false
@@ -725,7 +729,7 @@ export class Foret {
     // Marche : on avance dans la direction du regard, à l'horizontale, avec
     // une allure qui monte et descend en douceur ; balancement de la tête au
     // rythme des pas, et un pas déclenché à chaque appui du pied.
-    const veut = this.marche && this.intro >= 1 ? 1 : 0
+    const veut = this.marche && this.intro >= 1 && !this.lecture ? 1 : 0
     this.allure = lerp(this.allure, veut, veut ? 0.05 : 0.08)
     this.effort = lerp(this.effort, this.course && this.marche ? 1 : 0, 0.04)
     const vitesse = lerp(VITESSE, VITESSE_COURSE, this.effort)
@@ -761,6 +765,7 @@ export class Foret {
       if (Math.abs(this.camera.fov - f2) > 0.01) { this.camera.fov = f2; this.camera.updateProjectionMatrix() }
       this.autre.rendu(this.camera, dt)
       this.renderer.render(this.autre.scene, this.camera)
+      this.apres?.(this.camera, dt)
       return
     }
     this.bobY = bobY; this.rollCorps = roll
@@ -805,5 +810,6 @@ export class Foret {
     this.brumeFond.opacity = this.brumeMat.opacity * 0.75
 
     this.renderer.render(this.scene, this.camera)
+    this.apres?.(this.camera, dt)
   }
 }

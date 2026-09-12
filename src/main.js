@@ -1,9 +1,15 @@
 // Orchestration : écran d'entrée → déverrouillage du son et du gyroscope →
 // voile de brume → descente dans la forêt → interface.
 
-import { Foret } from './foret.js'
+import { Foret, TEMPLE_YAW } from './foret.js'
 import { Ambiance } from './ambiance.js'
 import { Atelier, ATELIER_YAW } from './atelier.js'
+import { Livre } from './livre.js'
+import { Loupe } from './loupe.js'
+
+const N_PAGES = 19
+const LIVRE_DIST = 3.6          // le livre flotte à cette distance, au milieu du sentier
+const LIVRE_HAUTEUR = -0.55     // centre du livre sous la ligne d'horizon : il ne cache pas le temple
 
 const $ = s => document.querySelector(s)
 const params = new URLSearchParams(location.search)
@@ -15,6 +21,7 @@ const btnSon = $('#enter-sound'), btnSilence = $('#enter-silent'), toggle = $('#
 const lookHint = $('#look-hint'), choose = $('#choose'), walk = $('#walk'), murmure = $('#murmure')
 const run = $('#run')
 const carte = $('#carte'), carteNom = $('#carte-nom'), carteSous = $('#carte-sous'), guide = $('#guide')
+const lecture = $('#lecture'), livreNum = $('#livre-num'), livrePlein = $('#livre-plein')
 
 const ambiance = new Ambiance()
 let foret = null
@@ -44,6 +51,8 @@ const pret = (async () => {
     // pixels étirés sur toute la largeur de l'écran.
     const url = (!mobile && foret.maxTexture >= 6144) ? './foret/sentier-6k.jpg' : './foret/sentier-4k.jpg'
     await foret.charger(url)
+    // Le livre est éclairé par le panorama lui-même.
+    livre?.setEnvironment(foret.scene.environment)
   }
   hint.textContent = mobile ? 'Inclinez votre téléphone une fois dans la forêt' : 'La forêt est prête'
   btnSon.disabled = false; btnSilence.disabled = false
@@ -52,6 +61,82 @@ const pret = (async () => {
   hint.textContent = 'La forêt met du temps à charger… vérifiez votre connexion.'
 })
 btnSon.disabled = true; btnSilence.disabled = true
+
+// ---- Le livre ---------------------------------------------------------------
+// Un grand guide qui lévite au milieu du sentier. On le touche : il vient dans
+// les mains, s'ouvre, et les pages se tournent au doigt. Dans l'atelier, il
+// arrive par le bouton « Ouvrir le guide ».
+let livre = null, loupe = null
+const urlPage = p => `./livre/page-${String(p).padStart(2, '0')}.jpg`
+if (foret) {
+  livre = new Livre(foret.renderer, {
+    mobile, nPages: N_PAGES,
+    on: {
+      ouvert: () => { hud.classList.add('is-lecture'); lecture.hidden = false; majPage(); montrerAide() },
+      ferme: () => { foret.lecture = false; hud.classList.remove('is-lecture'); lecture.hidden = true },
+      change: () => majPage(),
+      tourne: (dir, rigide) => ambiance.page(0.7, rigide),
+      zoom: () => majPage(),
+      loupe: p => { if (p) loupe.ouvrir(p) }
+    }
+  })
+  livre.poser(-Math.sin(TEMPLE_YAW) * LIVRE_DIST, LIVRE_HAUTEUR, -Math.cos(TEMPLE_YAW) * LIVRE_DIST)
+  foret.apres = (cam, dt) => livre.rendu(cam, dt)
+  // Un appui sur le livre fermé l'ouvre (dans l'atelier, onTap est remplacé).
+  foret.onTap = (nx, ny) => { if (livre.toucher(foret.camera, nx, ny)) ouvrirLivre() }
+
+  loupe = new Loupe($('#loupe'), {
+    url: urlPage, total: N_PAGES,
+    onClose: () => {
+      // Le livre se met à la page qu'on vient de lire.
+      const p = loupe.page, etaitZoom = !!livre.zoom
+      livre.goTo(Livre.feuillePour(p))
+      if (etaitZoom || mobile) livre.zoomTo(p % 2 === 1 ? 'right' : 'left')
+    }
+  })
+  window.__livre = livre
+}
+
+function ouvrirLivre() {
+  if (!livre || livre.ouvert) return
+  marcher(false)
+  foret.suivre = false
+  foret.lecture = true
+  murmure.textContent = ''
+  livre.ouvrir(foret.camera)
+}
+
+function majPage() {
+  if (!livre) return
+  const T = livre.turned, S = livre.S
+  let txt
+  if (livre.zoom) { const p = livre.page(livre.zoom.side); txt = p ? `${p} / ${N_PAGES}` : (T === 0 ? 'Couverture' : '') }
+  else if (T === 0) txt = 'Couverture'
+  else if (T >= S) txt = 'Fin'
+  else {
+    const g = livre.page('left'), d = livre.page('right')
+    txt = g && d ? `${g} – ${d} / ${N_PAGES}` : (g || d) ? `${g || d} / ${N_PAGES}` : ''
+  }
+  livreNum.textContent = txt
+  const surPage = !!(livre.page('left') || livre.page('right'))
+  livrePlein.hidden = !surPage
+}
+
+let aideTimer
+function montrerAide() {
+  lecture.classList.add('is-hint')
+  clearTimeout(aideTimer)
+  aideTimer = setTimeout(() => lecture.classList.remove('is-hint'), 7000)
+}
+
+$('#livre-fermer').addEventListener('click', () => livre?.fermer())
+$('#livre-prev').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(-1) : livre.prev() })
+$('#livre-next').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(1) : livre.next() })
+livrePlein.addEventListener('click', () => {
+  if (!livre) return
+  const p = livre.page(livre.zoom?.side || 'right') || livre.page('left')
+  if (p) loupe.ouvrir(p)
+})
 
 // Déclarés avant la boucle de rendu, qui démarre tout de suite.
 let arrive = false
@@ -64,6 +149,9 @@ if (foret) {
     if (ambiance.running) ambiance.setCourse(foret.effort * foret.allure)
     if (ambiance.hp) ambiance.setMusique(foret.distanceMusique(), foret.angleMusique())
     if (musiqueLancee && !arrive && foret.distanceMusique() < 6) arrivee()
+    // Quand on marche, ou qu'on est tout près, le livre s'envole au-dessus
+    // du chemin plutôt que de se laisser traverser.
+    if (livre && !livre.ouvert) livre.ecarte = (foret.marche || foret.pos.distanceTo(livre.positionFlottante) < 2.2) ? 1 : 0
     foret.rendu()
     raf = requestAnimationFrame(boucle)
   }
@@ -89,6 +177,8 @@ async function entrer(avecSon) {
     toggle.setAttribute('aria-pressed', 'false')
   }
   if (foret && mobile) foret.activerGyro().catch(() => {})
+  // Les pages du livre se chargent pendant la descente, une à une.
+  livre?.charger()
 
   // 1. Le titre s'enfonce, l'arrière-plan s'approche.
   entry.classList.add('is-leaving')
@@ -122,11 +212,14 @@ async function entrer(avecSon) {
   lookHint.textContent = foret?.gyroBrut
     ? 'Inclinez le téléphone ou glissez pour regarder · double appui pour recentrer'
     : (mobile ? 'Glissez pour regarder autour de vous' : 'Glissez pour regarder · ↑ pour marcher, Maj pour courir')
-  await attendre(4500)
+  // Le livre est là, au milieu du chemin.
+  await attendre(1200)
+  if (livre && !livre.ouvert) murmure.textContent = 'Un livre vous attend, au milieu du chemin. Touchez-le.'
+  await attendre(3300)
   hud.classList.add('is-settled')
 
   // Acte 1 : quelqu'un joue, dans le temple qu'on a devant soi.
-  await attendre(600)
+  await attendre(4000)
   lancerMusique()
 }
 
@@ -135,7 +228,7 @@ function lancerMusique() {
   musiqueLancee = true
   if (ambiance.running) ambiance.handpanLointain()
   preparerAtelier()
-  murmure.textContent = 'Quelqu’un joue, dans le temple, au bout du chemin.'
+  if (!livre?.ouvert) murmure.textContent = 'Quelqu’un joue, dans le temple, au bout du chemin.'
   hud.classList.add('is-musique')
   choose.querySelector('.btn__label').textContent = 'Suivre la musique'
 }
@@ -185,6 +278,8 @@ function entrerAtelier() {
   choose.hidden = true
   walk.hidden = true
   run.hidden = true
+  // Le livre ne flotte pas dans l'atelier : il y vient par le bouton.
+  if (livre) { livre.visible = false; guide.hidden = false }
   // Un appui sur un handpan le choisit ; sur un champ, joue la note.
   foret.onTap = (nx, ny) => {
     const r = atelier.toucher(foret.camera, nx, ny)
@@ -282,7 +377,7 @@ choose.addEventListener('click', () => {
   else toast('Écoutez… quelqu’un ne va pas tarder à jouer.')
 })
 
-guide.addEventListener('click', () => toast('Le guide s’ouvrira ici — sur la table, à côté de vous.'))
+guide.addEventListener('click', () => { if (livre) ouvrirLivre(); else toast('Le guide a besoin de WebGL pour s’ouvrir.') })
 
 let toastEl, toastTimer
 function toast(msg) {

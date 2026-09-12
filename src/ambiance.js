@@ -316,6 +316,29 @@ export class Ambiance {
     feuilles.start(t2); feuilles.stop(t2 + 0.2)
   }
 
+  // Une page qui tourne : un souffle de bruit filtré dont la fréquence
+  // balaie vers le haut puis retombe — le frottement du papier. La
+  // couverture, rigide, fait un son plus sourd et plus long. Passe par le
+  // chemin « dedans » : le livre est dans les mains, pas derrière les arbres.
+  page(force = 0.6, rigide = false) {
+    if (!this.ctx || !this.enabled) return
+    const c = this.ctx, t = c.currentTime
+    const dur = rigide ? 0.36 : 0.2 + force * 0.1
+    const src = this._sourceBruit()
+    src.playbackRate.value = rigide ? 0.7 : 0.95 + Math.random() * 0.25
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = rigide ? 0.8 : 1.4
+    bp.frequency.setValueAtTime(rigide ? 420 : 750, t)
+    bp.frequency.exponentialRampToValueAtTime(rigide ? 900 : 2600, t + dur * 0.55)
+    bp.frequency.exponentialRampToValueAtTime(rigide ? 380 : 900, t + dur)
+    const g = c.createGain()
+    const pic = (rigide ? 0.14 : 0.1) * (0.55 + 0.45 * force)
+    g.gain.setValueAtTime(0.0001, t)
+    g.gain.exponentialRampToValueAtTime(pic, t + 0.025)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur)
+    src.connect(bp).connect(g).connect(this.dedans)
+    src.start(t); src.stop(t + dur + 0.05)
+  }
+
   // ---- Le handpan au loin --------------------------------------------------
   // Provisoire, en attendant l'enregistrement : un handpan synthétisé
   // (fondamentale, octave, quinte supérieure, chacune avec sa propre
