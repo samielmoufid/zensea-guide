@@ -14,10 +14,10 @@
   <link rel="preload" as="image" href="./foret/sentier-mini.jpg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&display=swap">
-  <script type="module" crossorigin src="./assets/guide-DWdtAEQo.js"></script>
+  <script type="module" crossorigin src="./assets/guide-DJwKkSmA.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/three.module-DVKZ--Do.js">
-  <link rel="modulepreload" crossorigin href="./assets/loupe-HIbqwpgg.js">
-  <link rel="stylesheet" crossorigin href="./assets/loupe-BD6exzLI.css">
+  <link rel="modulepreload" crossorigin href="./assets/loupe-DNyb35-Y.js">
+  <link rel="stylesheet" crossorigin href="./assets/loupe-BDamrzKc.css">
 </head>
 <body>
   <!-- La scène WebGL vit derrière tout le reste. -->
@@ -93,9 +93,8 @@
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
         <span>Refermer</span>
       </button>
-      <p id="lecture-hint" class="lecture__hint">Glissez ou tirez un coin pour tourner · double appui pour approcher une page</p>
+      <p id="lecture-hint" class="lecture__hint">Touchez une page pour la lire en grand</p>
       <div class="lecture__bas">
-        <button id="livre-plein" class="lecture__plein" type="button">Lire en grand</button>
         <div class="lecture__nav">
           <button id="livre-prev" class="lecture__fleche" type="button" aria-label="Page précédente">‹</button>
           <span id="livre-num" class="lecture__num">Couverture</span>
@@ -108,13 +107,16 @@
   <!-- La loupe : une page en pleine résolution, à pincer. -->
   <div id="loupe" class="loupe" hidden>
     <div class="loupe__zone"><img alt="Page du guide" draggable="false"></div>
+    <button class="loupe__close" type="button" aria-label="Revenir au livre">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <span>Livre</span>
+    </button>
     <div class="loupe__bar">
-      <button class="loupe__prev lecture__fleche" type="button" aria-label="Page précédente">‹</button>
-      <span class="loupe__num lecture__num"></span>
-      <button class="loupe__next lecture__fleche" type="button" aria-label="Page suivante">›</button>
-      <button class="loupe__close" type="button">Revenir au livre</button>
+      <button class="loupe__prev loupe__fleche" type="button" aria-label="Page précédente">‹</button>
+      <span class="loupe__num"></span>
+      <button class="loupe__next loupe__fleche" type="button" aria-label="Page suivante">›</button>
+      <p class="loupe__aide"><span class="loupe__chevron" aria-hidden="true">‹</span><span class="loupe__texte">Glissez vers la gauche pour la page suivante</span></p>
     </div>
-    <p class="loupe__hint">Pincez ou touchez deux fois pour agrandir</p>
   </div>
 
 </body>
