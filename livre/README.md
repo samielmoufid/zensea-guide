@@ -15,7 +15,12 @@ Pages livrées par Sami (générées dans la DA Zensea, format portrait 1024×15
 | 08 | Quatorze notes : l'instrument à deux étages | Couronne étendue + graves dessous (Fa3, Sol3, La2) ; « notre conseil honnête » |
 | 09 | Deux accordages, et beaucoup de bêtises dites à leur sujet | 440 vs 432 Hz : ce qui est vrai, ce qui est faux |
 | 10 | Asseyez-vous, et ne faites rien d'autre | Position, trépied, mains, le premier geste (le ding, dix fois) |
-| 11+ | *à venir* | |
+| 11 | Ce qui fait le son, et ce qui le tue | La pulpe, le rebond, les trois erreurs, trois sons différents |
+| 12 | Huit temps que vous jouerez ce soir | Le motif Ré·La·Do·La·Ré·Fa·La·Do, mains G/D, comment le travailler |
+| 13 | Frappez trois notes ensemble, appelez ça un accord | Ré mineur, Fa majeur, Si♭ majeur ; progression Rém → Si♭ → Fa → Lam |
+| 14 | Une semaine pour que ça devienne un instrument | Jours 1 à 5, le piège de la semaine deux |
+| 15 | Votre handpan n'est pas un instrument solitaire | Avec un autre handpan, guitare/piano (Dm, F, Bb, C, Am, Gm), backing track, chant, s'enregistrer |
+| 16+ | *à venir* | |
 
 Le livre annonce vingt pages. Dans le guide, il s'ouvrira dans l'atelier,
 à côté du handpan choisi (bouton « Ouvrir le guide »), avec le moteur de
