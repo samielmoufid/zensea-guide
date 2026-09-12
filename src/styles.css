@@ -249,7 +249,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .lecture__fermer:hover { background: rgba(11,26,19,.6); }
 .lecture__hint {
-  position: absolute; left: 50%; bottom: max(112px, calc(env(safe-area-inset-bottom) + 100px)); transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: max(84px, calc(env(safe-area-inset-bottom) + 74px)); transform: translateX(-50%);
   margin: 0; padding: 8px 14px; border-radius: 999px; max-width: 88vw; text-align: center;
   font-size: 12.5px; letter-spacing: .03em; color: var(--papier);
   background: rgba(11,26,19,.32); border: 1px solid rgba(246,249,248,.16);
@@ -275,44 +275,76 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lecture__fleche:hover { background: rgba(246,249,248,.12); }
 .lecture__fleche[disabled] { opacity: .3; pointer-events: none; }
 .lecture__num { min-width: 96px; text-align: center; font-family: var(--serif); font-size: 17px; color: var(--papier); letter-spacing: .02em; }
-.lecture__plein {
-  padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(246,249,248,.28);
-  background: rgba(246,249,248,.1); color: var(--papier); font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase;
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); transition: background .2s;
-}
-.lecture__plein:hover { background: rgba(246,249,248,.2); }
-.lecture__plein[hidden] { display: none !important; }
 
-/* ---- La loupe ---- */
+/* ---- La loupe : la page sur tout l'écran ---- */
 .loupe {
-  position: fixed; inset: 0; z-index: 25; background: rgba(8,18,13,.96);
-  display: flex; flex-direction: column; opacity: 0; transition: opacity .35s;
+  position: fixed; inset: 0; z-index: 25; background: #08120d;
+  opacity: 0; transition: opacity .35s;
 }
 .loupe.is-on { opacity: 1; }
-.loupe__zone { flex: 1; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.loupe__zone { position: absolute; inset: 0 0 52px; display: grid; place-items: center; overflow: hidden; touch-action: none; }
 .loupe__zone img {
-  max-width: 100vw; max-height: calc(100vh - 70px); max-height: calc(100svh - 70px);
+  max-width: 100vw; max-height: calc(100vh - 52px); max-height: calc(100svh - 52px);
   width: auto; height: auto; user-select: none; -webkit-user-drag: none; will-change: transform;
-  box-shadow: 0 30px 80px rgba(0,0,0,.6); transition: transform .12s ease-out;
+  box-shadow: 0 30px 80px rgba(0,0,0,.6); transition: transform .18s cubic-bezier(.2,.7,.2,1);
 }
 .loupe.is-zoom .loupe__zone img { transition: none; }
-.loupe__bar {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  padding: 10px 12px max(12px, env(safe-area-inset-bottom)); background: rgba(11,26,19,.8);
-  border-top: 1px solid rgba(246,249,248,.12);
-}
+/* La page suivante arrive du côté où l'on a glissé. */
+.loupe.is-glisse-g .loupe__zone img { animation: page-g .45s cubic-bezier(.2,.7,.2,1); }
+.loupe.is-glisse-d .loupe__zone img { animation: page-d .45s cubic-bezier(.2,.7,.2,1); }
+@keyframes page-g { from { opacity: 0; transform: translateX(60px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes page-d { from { opacity: 0; transform: translateX(-60px) scale(.98); } to { opacity: 1; transform: none; } }
+.loupe.is-butee-g .loupe__zone img { animation: butee-g .35s ease; }
+.loupe.is-butee-d .loupe__zone img { animation: butee-d .35s ease; }
+@keyframes butee-g { 30% { transform: translateX(-14px); } }
+@keyframes butee-d { 30% { transform: translateX(14px); } }
 .loupe__close {
-  margin-left: 14px; padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(246,249,248,.3);
-  background: rgba(246,249,248,.1); color: var(--papier); font-size: 12.5px; letter-spacing: .06em; text-transform: uppercase;
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: 14px;
+  display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; border-radius: 999px;
+  background: rgba(11,26,19,.55); border: 1px solid rgba(246,249,248,.22); color: var(--papier);
+  font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  opacity: 0; transform: translateY(-6px); transition: opacity .5s .2s, transform .5s .2s, background .2s;
 }
-.loupe__hint {
-  position: absolute; top: max(14px, env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
-  margin: 0; padding: 7px 13px; border-radius: 999px; font-size: 12px; letter-spacing: .03em; white-space: nowrap;
-  color: rgba(246,249,248,.85); background: rgba(11,26,19,.5); border: 1px solid rgba(246,249,248,.14);
-  pointer-events: none; transition: opacity .6s;
+.loupe.is-on .loupe__close { opacity: 1; transform: none; }
+.loupe__close:hover { background: rgba(11,26,19,.8); }
+/* Le bandeau du bas, discret : il ne touche pas la page. */
+.loupe__bar {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 52px;
+  padding: 0 10px max(0px, env(safe-area-inset-bottom));
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  color: rgba(246,249,248,.78); font-size: 12.5px; letter-spacing: .04em;
+  background: linear-gradient(180deg, rgba(8,18,13,0), rgba(8,18,13,.9) 40%);
+  transform: translateY(8px); opacity: 0; transition: opacity .6s .35s, transform .6s .35s;
 }
-.loupe.is-zoom .loupe__hint { opacity: 0; }
-@media (pointer: fine) { .loupe__hint { display: none; } }
+.loupe.is-on .loupe__bar { opacity: 1; transform: none; }
+.loupe__fleche {
+  width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; color: inherit;
+  font-family: var(--serif); font-size: 26px; line-height: 1; display: grid; place-items: center; padding-bottom: 3px;
+  transition: background .2s;
+}
+.loupe__fleche:hover { background: rgba(246,249,248,.12); }
+.loupe__fleche[disabled] { opacity: .25; pointer-events: none; }
+.loupe__num { min-width: 58px; text-align: center; font-family: var(--serif); font-size: 15px; color: var(--papier); }
+.loupe__aide {
+  margin: 0 0 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
+  overflow: hidden; max-width: 70vw; text-overflow: ellipsis;
+  transition: opacity .8s, max-width .8s;
+}
+/* Sur écran tactile, pas de flèches : le geste suffit. Le numéro à gauche,
+   l'indication au centre. */
+@media (pointer: coarse) {
+  .loupe__bar { justify-content: flex-start; padding-left: 16px; }
+  .loupe__fleche { display: none; }
+  .loupe__num { min-width: 0; margin-right: 6px; }
+  .loupe__aide { flex: 1; margin: 0; }
+}
+.loupe__chevron { display: inline-block; font-family: var(--serif); font-size: 20px; line-height: 1; animation: chevron 1.6s ease-in-out infinite; }
+@keyframes chevron { 0%, 100% { transform: translateX(0); opacity: .5; } 50% { transform: translateX(-6px); opacity: 1; } }
+/* Une fois le geste compris, l'indication s'efface ; restent les flèches et le numéro. */
+.loupe.is-compris .loupe__aide { opacity: 0; max-width: 0; margin: 0; }
+@media (pointer: fine) { .loupe__chevron { display: none; } }
+@media (max-width: 480px) { .loupe__aide { font-size: 12px; } }
 
 /* Toast de placeholder pour l'étape suivante */
 .toast {

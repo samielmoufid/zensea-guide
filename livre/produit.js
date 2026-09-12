@@ -3,7 +3,7 @@
 // lumière, avec les oiseaux et un handpan quelque part dans les arbres. On
 // le touche (ou le bouton) : il vient dans les mains et s'ouvre.
 //
-// Pas de marche ici : on regarde autour de soi, et on lit.
+// Vue fixe : pas de marche, pas de regard qui bouge. On arrive, il est là.
 
 import { Foret, TEMPLE_YAW } from '../src/foret.js'
 import { Ambiance } from '../src/ambiance.js'
@@ -23,7 +23,7 @@ const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches
 const entry = $('#entry'), hud = $('#hud'), hint = $('#entry-hint')
 const btnSon = $('#enter-sound'), btnSilence = $('#enter-silent'), toggle = $('#sound-toggle')
 const lookHint = $('#look-hint'), murmure = $('#murmure'), ouvrir = $('#ouvrir')
-const lecture = $('#lecture'), livreNum = $('#livre-num'), livrePlein = $('#livre-plein')
+const lecture = $('#lecture'), livreNum = $('#livre-num')
 
 const ambiance = new Ambiance()
 let foret = null, livre = null, loupe = null
@@ -53,10 +53,14 @@ if (foret) {
   })
   livre.poser(-Math.sin(TEMPLE_YAW) * LIVRE_DIST, LIVRE_HAUTEUR, -Math.cos(TEMPLE_YAW) * LIVRE_DIST)
   livre.yawOffset = 0.26            // il nous fait face, tourné d'un rien
+  // Vue fixe : on arrive, le livre est devant nous. Rien à regarder ailleurs.
+  foret.statique = true
+  lookHint.hidden = true
   foret.apres = (cam, dt) => livre.rendu(cam, dt)
   foret.onTap = (nx, ny) => { if (livre.toucher(foret.camera, nx, ny)) ouvrirLivre() }
   loupe = new Loupe($('#loupe'), {
     url: urlPage, total: N_PAGES,
+    onOpen: () => { lecture.classList.remove('is-hint'); clearTimeout(aideTimer); aideVue = true },
     onClose: () => {
       const p = loupe.page, etaitZoom = !!livre.zoom
       livre.goTo(Livre.feuillePour(p))
@@ -74,7 +78,7 @@ const pret = (async () => {
     livre?.setEnvironment(foret.scene.environment)
     livre?.charger()
   }
-  hint.textContent = mobile ? 'Inclinez votre téléphone une fois arrivé' : 'Le voyage est prêt'
+  hint.textContent = 'Le voyage est prêt'
   btnSon.disabled = false; btnSilence.disabled = false
 })().catch(err => { console.error(err); hint.textContent = 'La forêt met du temps à charger… vérifiez votre connexion.' })
 btnSon.disabled = true; btnSilence.disabled = true
@@ -98,7 +102,6 @@ async function entrer(avecSon) {
   entre = true
   if (avecSon && ambiance.unlock()) toggle.setAttribute('aria-pressed', 'true')
   else toggle.setAttribute('aria-pressed', 'false')
-  if (foret && mobile) foret.activerGyro().catch(() => {})
   await pret
 
   const voyage = new Voyage($('#voyage'), { reduit, leger: mobile })
@@ -116,17 +119,13 @@ async function entrer(avecSon) {
     }
   })
   hud.classList.add('is-live')
-  lookHint.textContent = foret?.gyroBrut
-    ? 'Inclinez le téléphone ou glissez pour regarder · double appui pour recentrer'
-    : 'Glissez pour regarder autour de vous'
-  await attendre(1400)
+  // Quelqu'un joue, pas loin, derrière les arbres.
+  await attendre(900)
+  if (ambiance.running) { ambiance.handpanLointain(); ambiance.setMusique(13, 0.55) }
+  await attendre(600)
   murmure.textContent = 'Il vous attend. Touchez-le.'
   hud.classList.add('is-settled')
-  await attendre(2600)
-  // Quelqu'un joue, pas loin, derrière les arbres.
-  if (ambiance.running) { ambiance.handpanLointain(); ambiance.setMusique(13, 0.55) }
-  await attendre(4000)
-  hud.classList.add('is-settled')
+  await attendre(6000)
   if (murmure.textContent === 'Il vous attend. Touchez-le.') murmure.textContent = ''
 }
 
@@ -167,11 +166,11 @@ function majPage() {
     txt = g && d ? `${g} – ${d} / ${N_PAGES}` : (g || d) ? `${g || d} / ${N_PAGES}` : ''
   }
   livreNum.textContent = txt
-  livrePlein.hidden = !(livre.page('left') || livre.page('right'))
 }
 
-let aideTimer
+let aideTimer, aideVue = false
 function montrerAide() {
+  if (aideVue) return
   lecture.classList.add('is-hint')
   clearTimeout(aideTimer)
   aideTimer = setTimeout(() => lecture.classList.remove('is-hint'), 7000)
@@ -180,11 +179,6 @@ function montrerAide() {
 $('#livre-fermer').addEventListener('click', () => livre?.fermer())
 $('#livre-prev').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(-1) : livre.prev() })
 $('#livre-next').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(1) : livre.next() })
-livrePlein.addEventListener('click', () => {
-  if (!livre) return
-  const p = livre.page(livre.zoom?.side || 'right') || livre.page('left')
-  if (p) loupe.ouvrir(p)
-})
 
 // ---- Son -----------------------------------------------------------------------
 toggle.addEventListener('click', () => {

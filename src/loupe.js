@@ -1,24 +1,28 @@
-// La loupe : une page du livre en pleine résolution, à plat sur l'écran,
-// qu'on pince pour agrandir et qu'on fait glisser. C'est la lecture fine sur
-// téléphone, où une page dans le livre 3D reste trop petite pour le texte.
+// La loupe : une page du livre en pleine résolution, sur tout l'écran, qu'on
+// pince pour agrandir et qu'on fait glisser. Un balayage vers la gauche
+// passe à la page suivante ; l'indication, en bas, ne couvre pas la page et
+// s'efface une fois le geste compris.
 
 export class Loupe {
   /**
    * @param {HTMLElement} root  conteneur (#loupe)
-   * @param {{ url(p): string, total: number, onNav(p), onClose() }} o
+   * @param {{ url(p): string, total: number, onOpen(), onClose() }} o
    */
-  constructor(root, { url, total, onClose } = {}) {
+  constructor(root, { url, total, onOpen, onClose } = {}) {
     this.root = root
     this.url = url
     this.total = total
+    this.onOpen = onOpen
     this.onClose = onClose
     this.img = root.querySelector('img')
     this.num = root.querySelector('.loupe__num')
-    this.hint = root.querySelector('.loupe__hint')
+    this.aide = root.querySelector('.loupe__texte')
     this.page = 1
     this.ouverte = false
+    this.compris = false          // le visiteur a déjà changé de page en glissant
     this.s = 1; this.tx = 0; this.ty = 0
     this.pts = new Map()
+    this.fin = matchMedia('(pointer: fine)').matches && !matchMedia('(pointer: coarse)').matches
     this._lier()
   }
 
@@ -26,9 +30,11 @@ export class Loupe {
     this.page = Math.max(1, Math.min(this.total, p || 1))
     this._charger()
     this.root.hidden = false
+    this.root.classList.toggle('is-compris', this.compris)
     requestAnimationFrame(() => this.root.classList.add('is-on'))
     this.ouverte = true
     this._reset()
+    this.onOpen?.()
   }
 
   fermer() {
@@ -39,12 +45,23 @@ export class Loupe {
     this.onClose?.()
   }
 
-  aller(d) {
+  aller(d, geste = false) {
     const p = this.page + d
-    if (p < 1 || p > this.total) return
+    if (p < 1 || p > this.total) { this._butee(d); return }
     this.page = p
     this._charger()
     this._reset()
+    this.root.classList.remove('is-glisse-g', 'is-glisse-d')
+    void this.img.offsetWidth
+    this.root.classList.add(d > 0 ? 'is-glisse-g' : 'is-glisse-d')
+    if (geste && !this.compris) { this.compris = true; this.root.classList.add('is-compris') }
+  }
+
+  // En bout de livre : la page résiste un peu.
+  _butee(d) {
+    this.root.classList.remove('is-butee-g', 'is-butee-d')
+    void this.img.offsetWidth
+    this.root.classList.add(d > 0 ? 'is-butee-g' : 'is-butee-d')
   }
 
   _charger() {
@@ -52,12 +69,14 @@ export class Loupe {
     this.num.textContent = `${this.page} / ${this.total}`
     this.root.querySelector('.loupe__prev').disabled = this.page <= 1
     this.root.querySelector('.loupe__next').disabled = this.page >= this.total
+    this.aide.textContent = this.page >= this.total
+      ? 'Dernière page'
+      : this.fin ? 'Glissez ou utilisez les flèches pour changer de page' : 'Glissez vers la gauche pour la page suivante'
   }
 
   _reset() { this.s = 1; this.tx = 0; this.ty = 0; this._appliquer() }
 
   _appliquer() {
-    // La page reste dans le cadre : on borne la translation à l'échelle.
     const r = this.img.getBoundingClientRect()
     const W = innerWidth, H = innerHeight
     const w0 = r.width / this.s, h0 = r.height / this.s
@@ -75,8 +94,8 @@ export class Loupe {
     window.addEventListener('keydown', e => {
       if (!this.ouverte) return
       if (e.code === 'Escape') { this.fermer(); e.preventDefault(); e.stopImmediatePropagation() }
-      if (e.code === 'ArrowRight') { this.aller(1); e.preventDefault(); e.stopImmediatePropagation() }
-      if (e.code === 'ArrowLeft') { this.aller(-1); e.preventDefault(); e.stopImmediatePropagation() }
+      if (e.code === 'ArrowRight') { this.aller(1, true); e.preventDefault(); e.stopImmediatePropagation() }
+      if (e.code === 'ArrowLeft') { this.aller(-1, true); e.preventDefault(); e.stopImmediatePropagation() }
     }, true)
 
     const zone = r.querySelector('.loupe__zone')
@@ -98,7 +117,6 @@ export class Loupe {
         const [a, b] = [...this.pts.values()]
         const d = Math.hypot(a.x - b.x, a.y - b.y)
         const s = Math.max(1, Math.min(4.5, pinch.s0 * d / pinch.d0))
-        // Le point entre les doigts reste sous les doigts.
         const cx = (a.x + b.x) / 2 - innerWidth / 2, cy = (a.y + b.y) / 2 - innerHeight / 2
         const k = s / pinch.s0
         this.tx = cx - (pinch.cx - innerWidth / 2 - pinch.tx0) * k
@@ -108,19 +126,29 @@ export class Loupe {
       } else if (this.pts.size === 1) {
         if (Math.hypot(e.clientX - x0, e.clientY - y0) > 8) bouge = true
         if (this.s > 1.02) { this.tx += p.x - p.px; this.ty += p.y - p.py; this._appliquer() }
+        else {
+          // La page suit un peu le doigt : on sent qu'elle va partir.
+          const dx = e.clientX - x0
+          this.img.style.transform = `translate(${dx * 0.35}px, 0) scale(1)`
+        }
       }
     })
     const fin = e => {
       const avait = this.pts.size
       this.pts.delete(e.pointerId)
-      if (avait === 2) { pinch = null; const rest = [...this.pts.values()][0]; if (rest) { x0 = rest.x; y0 = rest.y; bouge = true } ; return }
+      if (avait === 2) { pinch = null; const rest = [...this.pts.values()][0]; if (rest) { x0 = rest.x; y0 = rest.y; bouge = true }; return }
       if (this.pts.size) return
       const dt = performance.now() - t0, dx = e.clientX - x0, dy = e.clientY - y0
-      if (this.s <= 1.02 && bouge && dt < 600 && Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.3) { this.aller(dx < 0 ? 1 : -1); return }
+      if (this.s <= 1.02) {
+        // Un geste franc, ou un long glissé lent : les deux changent de page.
+        const franc = dt < 900 && Math.abs(dx) > 48
+        const long = Math.abs(dx) > innerWidth * 0.25
+        if (bouge && (franc || long) && Math.abs(dx) > Math.abs(dy) * 1.3) { this.aller(dx < 0 ? 1 : -1, true); return }
+        this._appliquer() // la page revient en place
+      }
       if (!bouge && dt < 350) {
         const now = performance.now()
         if (now - dernierTap < 320) {
-          // Double appui : on agrandit là où on a touché, ou on revient à la page entière.
           if (this.s > 1.02) this._reset()
           else {
             const s = 2.6

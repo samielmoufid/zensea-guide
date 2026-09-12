@@ -585,14 +585,22 @@ export class Livre {
     const loc = p.loc0
     const timer = setTimeout(() => {
       this.lastTap = null
-      if (this.zoom) { this.zoomExit(); return }
+      if (this.zoom) {
+        const p = this.page(this.zoom.side)
+        if (p && this.on.loupe) this.on.loupe(p); else this.zoomExit()
+        return
+      }
       if (!loc) return
       const T = this.turned
       if (T === 0) { this.next(); return }
       if (T === this.S) { this.prev(); return }
       const side = loc.x >= 0.03 ? 'right' : loc.x <= -0.03 ? 'left' : null
       if (!side) return
-      side === 'right' ? this.next() : this.prev()
+      // Un appui sur une page du guide : on la lit en grand. Sur la
+      // couverture ou une garde : on tourne.
+      const p = this.page(side)
+      if (p && this.on.loupe) this.on.loupe(p)
+      else side === 'right' ? this.next() : this.prev()
     }, 290)
     this.lastTap = { t: now, x: e.clientX, y: e.clientY, timer }
   }

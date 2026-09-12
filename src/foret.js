@@ -73,6 +73,7 @@ export class Foret {
     this.suivre = false          // les pieds vont vers la musique, la tête reste libre
     this.autre = null            // scène de l'atelier quand on y est
     this.lecture = false         // le livre est ouvert : le doigt lui appartient
+    this.statique = false        // vue fixe : on ne regarde pas autour, on ne marche pas
     this.apres = null            // rendu par-dessus la scène (le livre), même caméra
 
     this.tPrec = performance.now()
@@ -542,10 +543,11 @@ export class Foret {
       this.onInteraction?.()
       // Double appui : on recentre le regard (utile avec le gyroscope).
       const now = performance.now()
-      if (now - dernierTap < 320) this.recentrer()
+      if (now - dernierTap < 320 && !this.statique) this.recentrer()
       dernierTap = now
     }
     const bouge = e => {
+      if (this.statique) return
       const w = window.innerWidth, h = window.innerHeight
       this.mouseX = (e.clientX / w) * 2 - 1
       this.mouseY = (e.clientY / h) * 2 - 1
@@ -564,7 +566,7 @@ export class Foret {
     const fin = e => {
       if (e.pointerId !== doigt || this.lecture) return
       doigt = null
-      if (down) this.inertie = { vx, vy }
+      if (down && !this.statique) this.inertie = { vx, vy }
       down = false
       // Un appui bref sans déplacement : un « tap », pour l'atelier.
       if (performance.now() - t0 < 350 && Math.hypot(e.clientX - x0, e.clientY - y0) < 12) {

@@ -21,7 +21,7 @@ const btnSon = $('#enter-sound'), btnSilence = $('#enter-silent'), toggle = $('#
 const lookHint = $('#look-hint'), choose = $('#choose'), walk = $('#walk'), murmure = $('#murmure')
 const run = $('#run')
 const carte = $('#carte'), carteNom = $('#carte-nom'), carteSous = $('#carte-sous'), guide = $('#guide')
-const lecture = $('#lecture'), livreNum = $('#livre-num'), livrePlein = $('#livre-plein')
+const lecture = $('#lecture'), livreNum = $('#livre-num')
 
 const ambiance = new Ambiance()
 let foret = null
@@ -90,6 +90,7 @@ if (foret) {
 
   loupe = new Loupe($('#loupe'), {
     url: urlPage, total: N_PAGES,
+    onOpen: () => { lecture.classList.remove('is-hint'); clearTimeout(aideTimer); aideVue = true },
     onClose: () => {
       // Le livre se met à la page qu'on vient de lire.
       const p = loupe.page, etaitZoom = !!livre.zoom
@@ -121,12 +122,11 @@ function majPage() {
     txt = g && d ? `${g} – ${d} / ${N_PAGES}` : (g || d) ? `${g || d} / ${N_PAGES}` : ''
   }
   livreNum.textContent = txt
-  const surPage = !!(livre.page('left') || livre.page('right'))
-  livrePlein.hidden = !surPage
 }
 
-let aideTimer
+let aideTimer, aideVue = false
 function montrerAide() {
+  if (aideVue) return
   lecture.classList.add('is-hint')
   clearTimeout(aideTimer)
   aideTimer = setTimeout(() => lecture.classList.remove('is-hint'), 7000)
@@ -135,11 +135,6 @@ function montrerAide() {
 $('#livre-fermer').addEventListener('click', () => livre?.fermer())
 $('#livre-prev').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(-1) : livre.prev() })
 $('#livre-next').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(1) : livre.next() })
-livrePlein.addEventListener('click', () => {
-  if (!livre) return
-  const p = livre.page(livre.zoom?.side || 'right') || livre.page('left')
-  if (p) loupe.ouvrir(p)
-})
 
 // Déclarés avant la boucle de rendu, qui démarre tout de suite.
 let arrive = false
