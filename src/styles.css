@@ -35,7 +35,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Repli sans WebGL : le panorama en fond, qui glisse lentement. */
 .fallback {
   position: fixed; inset: 0;
-  background: #0b1a13 url('/foret/jardin-4k.jpg') center / auto 100% repeat-x;
+  background: #0b1a13 url('/foret/sentier-4k.jpg') center / auto 100% repeat-x;
   animation: pan 90s linear infinite;
 }
 @keyframes pan { from { background-position-x: 0; } to { background-position-x: -4096px; } }
@@ -64,7 +64,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .entry__bg {
   position: absolute; inset: -6%;
-  background: url('/foret/jardin-mini.jpg') center 45% / cover no-repeat;
+  background: url('/foret/sentier-mini.jpg') center 45% / cover no-repeat;
   filter: blur(12px) saturate(1.05) brightness(0.62);
   transform: scale(1.04);
   animation: kenburns 28s ease-in-out infinite alternate;
@@ -208,8 +208,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .hud__walk.is-on { background: rgba(246,249,248,.92); color: var(--vert-sombre); box-shadow: 0 0 0 8px rgba(246,249,248,.14); }
 .hud.is-settled .hud__walk { opacity: 1; transform: none; }
-.hud__walk--run { left: 106px; transition-delay: .15s; }
-@media (max-width: 480px) { .hud__walk { width: 70px; height: 70px; font-size: 11px; } .hud__walk--run { left: 98px; } }
+.hud__walk--run { left: auto; right: 18px; transition-delay: .15s; }
+@media (max-width: 480px) { .hud__walk { width: 70px; height: 70px; font-size: 11px; } .hud__walk--run { left: auto; right: 14px; } }
 
 /* États pilotés par main.js */
 .hud.is-live .hud__brand, .hud.is-live .hud__sound { opacity: 1; }

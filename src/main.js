@@ -42,7 +42,7 @@ const pret = (async () => {
     // 6K sur les machines qui l'acceptent. Le flou du 2K venait de là : sur
     // un téléphone on ne voit que 82° du panorama, soit un cinquième des
     // pixels étirés sur toute la largeur de l'écran.
-    const url = (!mobile && foret.maxTexture >= 6144) ? './foret/jardin-6k.jpg' : './foret/jardin-4k.jpg'
+    const url = (!mobile && foret.maxTexture >= 6144) ? './foret/sentier-6k.jpg' : './foret/sentier-4k.jpg'
     await foret.charger(url)
   }
   hint.textContent = mobile ? 'Inclinez votre téléphone une fois dans la forêt' : 'La forêt est prête'
@@ -135,7 +135,7 @@ function lancerMusique() {
   musiqueLancee = true
   if (ambiance.running) ambiance.handpanLointain()
   preparerAtelier()
-  murmure.textContent = 'Quelqu’un joue, dans le temple.'
+  murmure.textContent = 'Quelqu’un joue, dans le temple, au bout du chemin.'
   hud.classList.add('is-musique')
   choose.querySelector('.btn__label').textContent = 'Suivre la musique'
 }

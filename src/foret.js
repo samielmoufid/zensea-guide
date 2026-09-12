@@ -19,9 +19,10 @@ const lerpAngle = (a, b, k) => {
 // Position du soleil dans le panorama (mesurée sur l'image : pixel le plus
 // lumineux) et direction du temple (le pavillon de l'autre côté du bassin).
 // Repère : le centre de la photo est à yaw 90°, et yaw décroît vers la droite.
-const TEMPLE_YAW = 29.9 * DEG
-const SUN_YAW = 54.1 * DEG
-const SUN_EL = 30.6 * DEG
+const TEMPLE_YAW = 77.4 * DEG   // le bout du sentier, où le temple est posé
+const TEMPLE_RATIO = 0.3752
+const SUN_YAW = 152.6 * DEG
+const SUN_EL = 25.3 * DEG
 const SUN_DIR = new THREE.Vector3(-Math.sin(SUN_YAW) * Math.cos(SUN_EL), Math.sin(SUN_EL), -Math.cos(SUN_YAW) * Math.cos(SUN_EL))
 
 const RAYON = 60          // rayon de la sphère
@@ -29,7 +30,7 @@ const PORTEE = 36         // distance maximale de marche depuis le centre
 const VITESSE = 3.4       // marche, unités par seconde
 const VITESSE_COURSE = 7.2
 const CADENCE = 2.0       // pas par seconde en marchant
-const CADENCE_COURSE = 3.2
+const CADENCE_COURSE = 2.7
 const PITCH_MAX = 80 * DEG
 
 export class Foret {
@@ -77,6 +78,7 @@ export class Foret {
     this.actif = false
 
     this._sphere()
+    this._temple()
     this._soleil()
     this._rais()
     this._poussieres()
@@ -142,6 +144,24 @@ export class Foret {
         res()
       }, undefined, rej)
     })
+  }
+
+  // ---- Le temple ------------------------------------------------------------
+  // Le vrai pavillon (découpé d'une photo de jardin de temple), posé au bout
+  // du sentier juste devant la sphère, face à l'observateur, voilé par la
+  // brume de distance. Quand on marche vers lui, il grandit avec le chemin.
+  _temple() {
+    const larg = 2 * (RAYON - 2) * Math.tan(12 * DEG), haut = larg * TEMPLE_RATIO
+    const mat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, opacity: 0, color: 0xf0f1ea, side: THREE.DoubleSide })
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(larg, haut), mat)
+    // La base du pavillon se pose sur la crête du sentier, à ~3,5° au-dessus
+    // de l'horizon dans cette photo.
+    const el = 3.5 * DEG
+    m.position.set(-Math.sin(TEMPLE_YAW) * (RAYON - 2) * Math.cos(el), (RAYON - 2) * Math.sin(el) + haut * 0.45, -Math.cos(TEMPLE_YAW) * (RAYON - 2) * Math.cos(el))
+    m.rotation.y = Math.atan2(m.position.x, m.position.z)
+    this.templeMat = mat
+    this.scene.add(m)
+    new THREE.TextureLoader().load('./foret/temple.png', tex => { tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; mat.map = tex; mat.needsUpdate = true; this.templePret = true })
   }
 
   // ---- Le soleil ------------------------------------------------------------
@@ -662,7 +682,7 @@ export class Foret {
     // Intro : on part le regard levé vers la canopée, champ serré, puis on
     // redescend vers le chemin en ouvrant l'angle. C'est la « descente ».
     const pitchIntro = lerp(52 * DEG, 0, ease)
-    const fov = lerp(34, this.fovBase, ease) + fovResp * ease + 5 * this.effort * this.allure
+    const fov = lerp(34, this.fovBase, ease) + fovResp * ease + 3 * this.effort * this.allure
     let roll = lerp(-3 * DEG, 0, ease)
 
     // Vent : celui de l'ambiance sonore si elle tourne, sinon une simulation
@@ -722,8 +742,8 @@ export class Foret {
       else if (this.marche) { this.marche = false; this.onArret?.() }
       this.phasePas += dt * cadence * 2 * Math.PI * (0.6 + 0.4 * this.allure)
       // Deux appuis par cycle (un par pied) : la tête descend à chaque pas.
-      bobY = -Math.abs(Math.sin(this.phasePas)) * (0.05 + 0.07 * this.effort) * this.allure
-      roll += Math.sin(this.phasePas) * (0.4 + 0.5 * this.effort) * DEG * this.allure
+      bobY = -Math.abs(Math.sin(this.phasePas)) * (0.035 + 0.025 * this.effort) * this.allure
+      roll += Math.sin(this.phasePas) * (0.28 + 0.1 * this.effort) * DEG * this.allure
       const demi = Math.floor(this.phasePas / Math.PI)
       if (demi !== this.dernierPas) {
         this.dernierPas = demi
@@ -752,6 +772,7 @@ export class Foret {
     this.rais.position.set(this.pos.x, 0, this.pos.z)
     this.brume.position.set(this.pos.x, 0, this.pos.z)
 
+    if (this.templePret) this.templeMat.opacity = lerp(this.templeMat.opacity, 0.96 * ease, 0.03)
     // Soleil : le halo respire, le cœur scintille à peine.
     this.haloMat.opacity = lerp(this.haloMat.opacity, (0.75 + 0.25 * Math.sin(t * 0.3)) * ease, 0.03)
     this.coeurMat.opacity = lerp(this.coeurMat.opacity, (0.85 + 0.15 * Math.sin(t * 1.7)) * ease, 0.05)
