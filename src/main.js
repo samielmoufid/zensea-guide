@@ -81,6 +81,9 @@ if (foret) {
     }
   })
   livre.poser(-Math.sin(TEMPLE_YAW) * LIVRE_DIST, LIVRE_HAUTEUR, -Math.cos(TEMPLE_YAW) * LIVRE_DIST)
+  // Dans la forêt en vue subjective, le livre ne flotte pas sur le chemin :
+  // il a sa propre page (/livre/). Ici il ne vient que dans l'atelier.
+  livre.visible = false
   foret.apres = (cam, dt) => livre.rendu(cam, dt)
   // Un appui sur le livre fermé l'ouvre (dans l'atelier, onTap est remplacé).
   foret.onTap = (nx, ny) => { if (livre.toucher(foret.camera, nx, ny)) ouvrirLivre() }
@@ -212,14 +215,11 @@ async function entrer(avecSon) {
   lookHint.textContent = foret?.gyroBrut
     ? 'Inclinez le téléphone ou glissez pour regarder · double appui pour recentrer'
     : (mobile ? 'Glissez pour regarder autour de vous' : 'Glissez pour regarder · ↑ pour marcher, Maj pour courir')
-  // Le livre est là, au milieu du chemin.
-  await attendre(1200)
-  if (livre && !livre.ouvert) murmure.textContent = 'Un livre vous attend, au milieu du chemin. Touchez-le.'
-  await attendre(3300)
+  await attendre(4500)
   hud.classList.add('is-settled')
 
   // Acte 1 : quelqu'un joue, dans le temple qu'on a devant soi.
-  await attendre(4000)
+  await attendre(600)
   lancerMusique()
 }
 

@@ -1,0 +1,21 @@
+/* La page du livre : le voyage, la clairière, le grand livre. */
+
+.voyage { position: fixed; inset: 0; z-index: 35; width: 100%; height: 100%; display: none; pointer-events: none; }
+
+/* Le bouton d'ouverture n'apparaît qu'une fois le livre posé dans la lumière. */
+#ouvrir { opacity: 0; transform: translateY(8px); transition: opacity 1.4s, transform 1.4s cubic-bezier(.2,.7,.2,1); }
+.hud.is-settled #ouvrir { opacity: 1; transform: none; }
+.hud.is-lecture #ouvrir { display: none; }
+.hud__lien {
+  margin: 0; font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+  color: rgba(246,249,248,.7); text-decoration: none; text-shadow: 0 1px 10px rgba(0,0,0,.4);
+  opacity: 0; transition: opacity 1.6s .4s, color .2s;
+}
+.hud__lien:hover { color: var(--papier); }
+.hud.is-settled .hud__lien { opacity: 1; }
+.hud.is-lecture .hud__lien { display: none; }
+.hud.is-lecture .hud__murmure { display: none; }
+
+/* Sur cette page, le livre est le centre : le bas reste dégagé. */
+.hud__bottom { gap: 14px; }
+@media (max-width: 480px) { .hud__lien { font-size: 11px; } }

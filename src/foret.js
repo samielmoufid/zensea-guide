@@ -34,9 +34,10 @@ const CADENCE_COURSE = 2.7
 const PITCH_MAX = 80 * DEG
 
 export class Foret {
-  constructor(canvas, { mobile = false } = {}) {
+  constructor(canvas, { mobile = false, base = './' } = {}) {
     this.canvas = canvas
     this.mobile = mobile
+    this.base = base            // racine des images (la page du livre est dans /livre/)
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !mobile, powerPreference: 'high-performance' })
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 3 : 2))
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
@@ -163,7 +164,7 @@ export class Foret {
     m.rotation.y = Math.atan2(m.position.x, m.position.z)
     this.templeMat = mat
     this.scene.add(m)
-    new THREE.TextureLoader().load('./foret/temple.png', tex => { tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; mat.map = tex; mat.needsUpdate = true; this.templePret = true })
+    new THREE.TextureLoader().load(this.base + 'foret/temple.png', tex => { tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8; mat.map = tex; mat.needsUpdate = true; this.templePret = true })
   }
 
   // ---- Le soleil ------------------------------------------------------------

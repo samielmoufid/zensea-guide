@@ -176,6 +176,7 @@ export class Livre {
     this.vol = null              // transition en cours { de, a, t0, dur, vers }
     this.ecarte = 0              // 0 : au milieu du chemin, 1 : envolé au-dessus
     this.ecarteK = 0
+    this.yawOffset = 0.42        // de combien le livre fermé se tourne (on voit le dos)
     this.flotte = { p: new THREE.Vector3(), yaw: 0 }
     this.poseMonde = { p: new THREE.Vector3(), q: new THREE.Quaternion() }
     this.presence = 1            // 0..1, opacité/échelle globale (atelier)
@@ -285,8 +286,24 @@ export class Livre {
     const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace
     this.haloMat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, opacity: 0 })
     this.halo = new THREE.Sprite(this.haloMat)
-    this.halo.scale.set(PH * 2.6, PH * 2.6, 1)
+    this.halo.scale.set(PH * 3, PH * 3, 1)
     this.scene.add(this.halo)
+
+    // Un rai de lumière tombe des arbres sur le livre.
+    const cr = document.createElement('canvas'); cr.width = 64; cr.height = 512
+    const gr = cr.getContext('2d')
+    const vert = gr.createLinearGradient(0, 0, 0, 512)
+    vert.addColorStop(0, 'rgba(255,240,200,0)'); vert.addColorStop(0.15, 'rgba(255,240,200,0.6)')
+    vert.addColorStop(0.7, 'rgba(255,235,190,0.35)'); vert.addColorStop(1, 'rgba(255,230,180,0)')
+    gr.fillStyle = vert; gr.fillRect(0, 0, 64, 512)
+    const cote = gr.createLinearGradient(0, 0, 64, 0)
+    cote.addColorStop(0, 'rgba(0,0,0,1)'); cote.addColorStop(0.35, 'rgba(0,0,0,0)'); cote.addColorStop(0.65, 'rgba(0,0,0,0)'); cote.addColorStop(1, 'rgba(0,0,0,1)')
+    gr.globalCompositeOperation = 'destination-out'; gr.fillStyle = cote; gr.fillRect(0, 0, 64, 512)
+    const tr = new THREE.CanvasTexture(cr); tr.colorSpace = THREE.SRGBColorSpace
+    this.raiMat = new THREE.SpriteMaterial({ map: tr, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, opacity: 0 })
+    this.rai = new THREE.Sprite(this.raiMat)
+    this.rai.scale.set(PW * 2.4, PH * 5.5, 1)
+    this.scene.add(this.rai)
 
     const n = this.mobile ? 60 : 110
     this.nM = n
@@ -655,7 +672,7 @@ export class Livre {
     const posFl = new THREE.Vector3(pf.x, yFl, pf.z)
     // Tourné d'un quart vers la lumière, pour qu'on voie le dos et l'épaisseur :
     // un objet posé dans l'air, pas un panneau.
-    const yawFl = Math.atan2(camera.position.x - pf.x, camera.position.z - pf.z) + 0.42 + Math.sin(t * 0.33) * 0.16
+    const yawFl = Math.atan2(camera.position.x - pf.x, camera.position.z - pf.z) + this.yawOffset + Math.sin(t * 0.33) * 0.16
     const qFl = new THREE.Quaternion().setFromEuler(new THREE.Euler(-0.2 - this.ecarteK * 0.5 + Math.sin(t * 0.5) * 0.04, yawFl, -0.05 + Math.sin(t * 0.41) * 0.035, 'YXZ'))
 
     // Pose « lecture » : dans les mains, devant la caméra ; en zoom, une page
@@ -695,8 +712,10 @@ export class Livre {
 
     // Halo et poussières : autour du livre fermé, éteints en lecture.
     const halo = (this.ouvert || this.vol ? 0 : 1) * (this.visible ? 1 : 0) * this.presence
-    this.haloMat.opacity = lerp(this.haloMat.opacity, halo * (0.85 + 0.15 * Math.sin(t * 0.9)) * (this.survol ? 1.2 : 1), damp(2))
+    this.haloMat.opacity = lerp(this.haloMat.opacity, halo * (0.95 + 0.05 * Math.sin(t * 0.9)) * (this.survol ? 1.2 : 1), damp(2))
     this.halo.position.copy(posFl).addScaledVector(new THREE.Vector3(0, 0, -1).applyQuaternion(qFl), 0.3)
+    this.raiMat.opacity = lerp(this.raiMat.opacity, halo * (0.55 + 0.12 * Math.sin(t * 0.6 + 1)), damp(2))
+    this.rai.position.set(posFl.x + 0.05, posFl.y + PH * 1.9, posFl.z).addScaledVector(new THREE.Vector3(0, 0, -1).applyQuaternion(qFl), 0.2)
     this.motesMat.opacity = lerp(this.motesMat.opacity, halo * 0.75, damp(2))
     const pos = this.motes.geometry.attributes.position.array
     for (let i = 0; i < this.nM; i++) {
