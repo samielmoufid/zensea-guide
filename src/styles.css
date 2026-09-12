@@ -35,7 +35,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* Repli sans WebGL : le panorama en fond, qui glisse lentement. */
 .fallback {
   position: fixed; inset: 0;
-  background: #0b1a13 url('/foret/vondel-4k.jpg') center / auto 100% repeat-x;
+  background: #0b1a13 url('/foret/jardin-4k.jpg') center / auto 100% repeat-x;
   animation: pan 90s linear infinite;
 }
 @keyframes pan { from { background-position-x: 0; } to { background-position-x: -4096px; } }
@@ -47,25 +47,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
     radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 45%, rgba(30,18,5,.28) 100%),
     linear-gradient(180deg, rgba(255,200,120,.05), rgba(0,0,0,0) 35%, rgba(20,12,4,.18));
 }
-
-/* Le corps photographique : ancré en bas, glisse dans le champ quand on
-   baisse les yeux. Les calques sont superposés et déplacés en JS. */
-.corps2d {
-  /* Plus large que l'écran : les mains arrivent aux bords, comme dans la
-     réalité (le montage de référence occupe 28 % de la hauteur). */
-  --l: 118vw;
-  position: fixed; left: calc((100vw - var(--l)) / 2); width: var(--l); bottom: 0; z-index: 6;
-  height: calc(var(--l) * 1.1387); max-height: 80vh; pointer-events: none; overflow: visible;
-  transform: translateY(105%); will-change: transform;
-}
-@media (min-aspect-ratio: 1/1) { .corps2d { --l: 62vw; } }
-.corps2d__c {
-  position: absolute; left: 0; bottom: 0; width: 100%; height: auto;
-  opacity: 0; transition: opacity .09s linear;
-  filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
-}
-.corps2d__c.is-on { opacity: 1; }
-.corps2d.is-off { display: none; }
 
 /* ---- Voile de brume à l'entrée ---- */
 .veil {
@@ -83,7 +64,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .entry__bg {
   position: absolute; inset: -6%;
-  background: url('/foret/vondel-mini.jpg') center 45% / cover no-repeat;
+  background: url('/foret/jardin-mini.jpg') center 45% / cover no-repeat;
   filter: blur(12px) saturate(1.05) brightness(0.62);
   transform: scale(1.04);
   animation: kenburns 28s ease-in-out infinite alternate;

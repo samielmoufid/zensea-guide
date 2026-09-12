@@ -17,10 +17,11 @@ const lerpAngle = (a, b, k) => {
 }
 
 // Position du soleil dans le panorama (mesurée sur l'image : pixel le plus
-// lumineux). Repère : le centre de la photo est à yaw 90°, et yaw décroît
-// quand on va vers la droite de l'image.
-const SUN_YAW = (90 - 41.1) * DEG
-const SUN_EL = 15.8 * DEG
+// lumineux) et direction du temple (le pavillon de l'autre côté du bassin).
+// Repère : le centre de la photo est à yaw 90°, et yaw décroît vers la droite.
+const TEMPLE_YAW = 29.9 * DEG
+const SUN_YAW = 54.1 * DEG
+const SUN_EL = 30.6 * DEG
 const SUN_DIR = new THREE.Vector3(-Math.sin(SUN_YAW) * Math.cos(SUN_EL), Math.sin(SUN_EL), -Math.cos(SUN_YAW) * Math.cos(SUN_EL))
 
 const RAYON = 60          // rayon de la sphère
@@ -44,7 +45,7 @@ export class Foret {
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 200)
 
     // Regard : cible (où l'utilisateur veut regarder) et valeur lissée.
-    this.yaw0 = SUN_YAW + 34 * DEG   // recalculé selon le format dans resize()
+    this.yaw0 = TEMPLE_YAW           // face au temple, recalculé dans resize()
     this.yaw = this.yaw0; this.pitch = 0
     this.dragYaw = 0; this.dragPitch = 0       // décalage accumulé au doigt / souris
     this.mouseX = 0; this.mouseY = 0            // parallaxe souris, -1..1
@@ -285,12 +286,12 @@ export class Foret {
     for (const y of [26, 42, 58, 74]) { g.beginPath(); g.moveTo(32, y); g.lineTo(52, y - 12); g.moveTo(32, y); g.lineTo(12, y - 12); g.stroke() }
     const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace
 
-    const n = this.mobile ? 70 : 140
+    const n = this.mobile ? 36 : 70
     this.nF = n
     const mat = new THREE.MeshBasicMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, transparent: false })
     this.feuilles = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.13, 0.19), mat, n)
     this.feuilles.frustumCulled = false
-    const teintes = [0xd9a441, 0xc7862c, 0xb8641f, 0xa84a22, 0xe0b95a, 0x9c6b2a, 0xc94f2b]
+    const teintes = [0x8fb35a, 0xa9c46a, 0x7a9c48, 0xc9d27a, 0x6f8f3e, 0xb8c86a, 0xe0d38a]
     this.F = []
     const BF = 14
     for (let i = 0; i < n; i++) {
@@ -630,8 +631,8 @@ export class Foret {
     // Sur un écran étroit on ouvre plus l'angle pour ne pas se sentir enfermé,
     // et on met le soleil plus près du centre, le champ horizontal étant réduit.
     this.fovBase = w < h ? 82 : 68
-    if (!this.autre) this.yaw0 = SUN_YAW + (w < h ? 20 : 34) * DEG
-    const ym = this.yaw0 + 38 * DEG
+    if (!this.autre) this.yaw0 = TEMPLE_YAW
+    const ym = TEMPLE_YAW
     this.musique.set(-Math.sin(ym) * (PORTEE - 3), 0, -Math.cos(ym) * (PORTEE - 3))
     this.camera.updateProjectionMatrix()
     this.pMat.uniforms.uScale.value = h * 0.42

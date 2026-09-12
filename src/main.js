@@ -42,7 +42,7 @@ const pret = (async () => {
     // 6K sur les machines qui l'acceptent. Le flou du 2K venait de là : sur
     // un téléphone on ne voit que 82° du panorama, soit un cinquième des
     // pixels étirés sur toute la largeur de l'écran.
-    const url = (!mobile && foret.maxTexture >= 6144) ? './foret/vondel-6k.jpg' : './foret/vondel-4k.jpg'
+    const url = (!mobile && foret.maxTexture >= 6144) ? './foret/jardin-6k.jpg' : './foret/jardin-4k.jpg'
     await foret.charger(url)
   }
   hint.textContent = mobile ? 'Inclinez votre téléphone une fois dans la forêt' : 'La forêt est prête'
@@ -52,37 +52,6 @@ const pret = (async () => {
   hint.textContent = 'La forêt met du temps à charger… vérifiez votre connexion.'
 })
 btnSon.disabled = true; btnSilence.disabled = true
-
-// ---- Le corps ------------------------------------------------------------
-// Cinq photos (repos, marche gauche/droite, course gauche/droite) posées sur
-// la vue. Elles glissent dans le champ quand on baisse les yeux, suivent le
-// balancement de la tête, et à chaque pas la pose bascule d'un côté à
-// l'autre — au rythme réel des pas, plus vite en courant.
-const corps2d = $('#corps2d')
-const calques = Object.fromEntries([...corps2d.querySelectorAll('.corps2d__c')].map(el => [el.dataset.c, el]))
-const DEG = Math.PI / 180
-let poseActive = 'repos'
-function animerCorps() {
-  if (!foret) return
-  if (foret.autre || foret.intro < 0.9) { corps2d.classList.add('is-off'); return }
-  corps2d.classList.remove('is-off')
-  const p = foret.pitch
-  // 0 = hors champ (regard à l'horizon) … 1 = en place (regard à ~60° en bas).
-  let k = Math.min(1, Math.max(0, (-p - 12 * DEG) / (48 * DEG)))
-  k = 1 - Math.pow(1 - k, 2)
-  const h = corps2d.offsetHeight || 1
-  const a = foret.allure || 0, e = foret.effort || 0, ph = foret.phasePas || 0
-  const bob = (foret.bobY || 0) * (h * 0.9)
-  const roll = -(foret.rollCorps || 0) / DEG * 0.5
-  const pulse = 1 + Math.abs(Math.sin(ph)) * (0.012 + 0.02 * e) * a
-  corps2d.style.transform = `translateY(${(1 - k) * 105}%) translateY(${bob}px) rotate(${roll}deg) scale(${pulse})`
-  const pose = a < 0.3 ? 'repos' : (e > 0.5 ? 'course' : 'marche') + (Math.sin(ph) >= 0 ? '-g' : '-d')
-  if (pose !== poseActive) {
-    calques[poseActive]?.classList.remove('is-on')
-    calques[pose]?.classList.add('is-on')
-    poseActive = pose
-  }
-}
 
 // Déclarés avant la boucle de rendu, qui démarre tout de suite.
 let arrive = false
@@ -96,7 +65,6 @@ if (foret) {
     if (ambiance.hp) ambiance.setMusique(foret.distanceMusique(), foret.angleMusique())
     if (musiqueLancee && !arrive && foret.distanceMusique() < 6) arrivee()
     foret.rendu()
-    animerCorps()
     raf = requestAnimationFrame(boucle)
   }
   boucle()
@@ -157,8 +125,8 @@ async function entrer(avecSon) {
   await attendre(4500)
   hud.classList.add('is-settled')
 
-  // Acte 1 : quelqu'un joue, un peu plus loin.
-  await attendre(2500)
+  // Acte 1 : quelqu'un joue, dans le temple qu'on a devant soi.
+  await attendre(600)
   lancerMusique()
 }
 
@@ -167,7 +135,7 @@ function lancerMusique() {
   musiqueLancee = true
   if (ambiance.running) ambiance.handpanLointain()
   preparerAtelier()
-  murmure.textContent = 'Quelqu’un joue, un peu plus loin.'
+  murmure.textContent = 'Quelqu’un joue, dans le temple.'
   hud.classList.add('is-musique')
   choose.querySelector('.btn__label').textContent = 'Suivre la musique'
 }
