@@ -51,8 +51,9 @@ const pret = (async () => {
     // pixels étirés sur toute la largeur de l'écran.
     const url = (!mobile && foret.maxTexture >= 6144) ? './foret/sentier-6k.jpg' : './foret/sentier-4k.jpg'
     await foret.charger(url)
-    // Le livre est éclairé par le panorama lui-même.
+    // Le livre est éclairé par le panorama lui-même ; le temple aussi.
     livre?.setEnvironment(foret.scene.environment)
+    preparerAtelier()
   }
   hint.textContent = mobile ? 'Inclinez votre téléphone une fois dans la forêt' : 'La forêt est prête'
   btnSon.disabled = false; btnSilence.disabled = false
@@ -136,17 +137,12 @@ $('#livre-fermer').addEventListener('click', () => livre?.fermer())
 $('#livre-prev').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(-1) : livre.prev() })
 $('#livre-next').addEventListener('click', () => { if (!livre) return; livre.zoom ? livre.zoomNav(1) : livre.next() })
 
-// Déclarés avant la boucle de rendu, qui démarre tout de suite.
-let arrive = false
-let musiqueLancee = false
 if (foret) {
   let raf
   const boucle = () => {
     // Le vent qu'on entend est celui qu'on voit.
     foret.ventExterne = ambiance.running ? ambiance.niveauVent : null
     if (ambiance.running) ambiance.setCourse(foret.effort * foret.allure)
-    if (ambiance.hp) ambiance.setMusique(foret.distanceMusique(), foret.angleMusique())
-    if (musiqueLancee && !arrive && foret.distanceMusique() < 6) arrivee()
     // Quand on marche, ou qu'on est tout près, le livre s'envole au-dessus
     // du chemin plutôt que de se laisser traverser.
     if (livre && !livre.ouvert) livre.ecarte = (foret.marche || foret.pos.distanceTo(livre.positionFlottante) < 2.2) ? 1 : 0
@@ -160,6 +156,8 @@ if (foret) {
 }
 
 // ---- Entrée --------------------------------------------------------------
+// On arrive directement dans le temple : la brume monte sur l'écran d'entrée,
+// et se dissipe sur les tables et les seize handpans.
 let entre = false
 async function entrer(avecSon) {
   if (entre) return
@@ -175,26 +173,25 @@ async function entrer(avecSon) {
     toggle.setAttribute('aria-pressed', 'false')
   }
   if (foret && mobile) foret.activerGyro().catch(() => {})
-  // Les pages du livre se chargent pendant la descente, une à une.
+  // Les pages du livre se chargent pendant l'arrivée, une à une.
   livre?.charger()
 
   // 1. Le titre s'enfonce, l'arrière-plan s'approche.
   entry.classList.add('is-leaving')
-  // 2. La brume monte et recouvre tout.
-  // Appliqué de façon synchrone (lecture forcée de la mise en page entre les
-  // deux) : un requestAnimationFrame peut arriver après le minuteur suivant
-  // sur une machine qui rame, et le voile resterait alors opaque.
+  // 2. La brume monte et recouvre tout (appliqué de façon synchrone : voir
+  // plus haut, un requestAnimationFrame peut arriver trop tard).
   veil.style.transition = 'opacity 1.4s cubic-bezier(.4,0,.6,1)'
   void veil.offsetHeight
   veil.style.opacity = '1'
   await attendre(1500)
   entry.remove()
   hud.hidden = false
+  if (foret) { foret.setIntro(0); entrerAtelier() }
 
-  // 3. La brume se dissipe sur la descente dans la forêt.
+  // 3. La brume se dissipe : on est dans le temple, le regard se relève des tables.
   veil.style.transition = 'opacity 3.2s cubic-bezier(.3,0,.2,1)'
   veil.style.opacity = '0'
-  const duree = reduit ? 800 : 5200
+  const duree = reduit ? 800 : 4200
   const t0 = performance.now()
   await new Promise(res => {
     const step = () => {
@@ -209,88 +206,54 @@ async function entrer(avecSon) {
   hud.classList.add('is-live')
   lookHint.textContent = foret?.gyroBrut
     ? 'Inclinez le téléphone ou glissez pour regarder · double appui pour recentrer'
-    : (mobile ? 'Glissez pour regarder autour de vous' : 'Glissez pour regarder · ↑ pour marcher, Maj pour courir')
-  await attendre(4500)
+    : 'Glissez pour regarder autour de vous'
+  await attendre(1200)
+  murmure.textContent = 'Seize handpans. Touchez celui qui vous appelle.'
+  await attendre(3300)
   hud.classList.add('is-settled')
-
-  // Acte 1 : quelqu'un joue, dans le temple qu'on a devant soi.
-  await attendre(600)
-  lancerMusique()
+  if (ambiance.running) ambiance.handpanLointain(), ambiance.setMusique(30, -0.9)
 }
 
-function lancerMusique() {
-  if (musiqueLancee) return
-  musiqueLancee = true
-  if (ambiance.running) ambiance.handpanLointain()
-  preparerAtelier()
-  if (!livre?.ouvert) murmure.textContent = 'Quelqu’un joue, dans le temple, au bout du chemin.'
-  hud.classList.add('is-musique')
-  choose.querySelector('.btn__label').textContent = 'Suivre la musique'
-}
-
-// Le bouton tourne le regard vers la musique, puis on se met en marche.
-async function suivre() {
-  if (!musiqueLancee) return
-  foret?.tournerVersMusique()
-  murmure.textContent = ''
-  // Les pieds vont vers la musique quoi qu'on regarde ; la tête reste libre.
-  if (foret) foret.suivre = true
-  for (let i = 0; i < 24 && foret?.cibleYaw != null; i++) await attendre(50)
-  if (foret && !foret.marche) marcher(true)
-}
-
-// Arrivée : la lumière monte, et on entre dans l'atelier.
+// Le temple est construit dès que la forêt est chargée : il partage son panorama.
 let atelier = null
-async function arrivee() {
-  arrive = true
-  marcher(false)
-  veil.style.transition = 'opacity 1.6s cubic-bezier(.4,0,.6,1)'
-  void veil.offsetHeight
-  veil.style.opacity = '1'
-  await Promise.all([attendre(1700), atelierPret])
-  entrerAtelier()
-  veil.style.transition = 'opacity 2.6s cubic-bezier(.3,0,.2,1)'
-  veil.style.opacity = '0'
-  await attendre(2200)
-  murmure.textContent = 'Il vient de partir. Le thé fume encore.'
-  await attendre(5200)
-  murmure.textContent = 'Choisissez votre handpan.'
-}
-
-// L'atelier se charge en arrière-plan dès que la musique commence.
-let atelierPret = Promise.resolve()
 function preparerAtelier() {
   if (!foret || atelier) return
   atelier = new Atelier(foret.renderer, { mobile })
-  atelierPret = atelier.charger('./atelier/attic-3k.jpg').catch(err => console.error(err))
+  atelier.utiliser(foret.panoMat.uniforms.map.value, foret.scene.environment)
   atelier.onNote = (f, vel, pan) => ambiance.noteProche(f, vel, pan)
+  window.__atelier = atelier
 }
 
 function entrerAtelier() {
+  preparerAtelier()
   foret.entrerAtelier(atelier, ATELIER_YAW)
-  ambiance.interieur(true)
   hud.classList.add('is-atelier')
   choose.hidden = true
   walk.hidden = true
   run.hidden = true
-  // Le livre ne flotte pas dans l'atelier : il y vient par le bouton.
+  // Le livre ne flotte pas ici : il vient par le bouton « Ouvrir le guide ».
   if (livre) { livre.visible = false; guide.hidden = false }
-  // Un appui sur un handpan le choisit ; sur un champ, joue la note.
+  // Un appui sur un handpan le choisit ; sur un champ, joue la note ; à côté, on le repose.
   foret.onTap = (nx, ny) => {
+    if (livre?.ouvert) return
     const r = atelier.toucher(foret.camera, nx, ny)
     if (r?.type === 'choix') {
       carteNom.textContent = r.modele.nom; carteSous.textContent = r.modele.sous
       carte.hidden = false; guide.hidden = false
       hud.classList.add('is-choisi')
-      murmure.textContent = 'Touchez les champs pour jouer.'
-      setTimeout(() => { if (murmure.textContent === 'Touchez les champs pour jouer.') murmure.textContent = '' }, 5000)
+      murmure.textContent = 'Touchez les champs pour jouer · touchez à côté pour le reposer.'
+      setTimeout(() => { if (murmure.textContent.startsWith('Touchez les champs')) murmure.textContent = '' }, 5000)
       // La première note, offerte : c'est sa voix.
       setTimeout(() => ambiance.noteProche(r.modele.notes[0], 0.7, 0), 700)
+    } else if (r?.type === 'repose') {
+      carte.hidden = true
+      hud.classList.remove('is-choisi')
+      murmure.textContent = ''
     }
   }
   // Survol à la souris : le handpan s'éclaire.
   window.addEventListener('pointermove', e => {
-    if (atelier.choisi) return
+    if (atelier.choisi || livre?.ouvert) return
     const obj = atelier.viser(foret.camera, (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1)
     atelier.survol = obj ? (obj.userData.handpan || obj.parent) : null
     document.body.style.cursor = obj ? 'pointer' : ''
@@ -356,7 +319,7 @@ toggle.addEventListener('click', () => {
   const on = toggle.getAttribute('aria-pressed') === 'true'
   if (on) { ambiance.stop(); toggle.setAttribute('aria-pressed', 'false') }
   else {
-    if (ambiance.unlock()) { ambiance.start(2.5); toggle.setAttribute('aria-pressed', 'true'); if (musiqueLancee) ambiance.handpanLointain() }
+    if (ambiance.unlock()) { ambiance.start(2.5); toggle.setAttribute('aria-pressed', 'true'); if (hud.classList.contains('is-settled')) { ambiance.handpanLointain(); ambiance.setMusique(30, -0.9) } }
   }
 })
 document.addEventListener('visibilitychange', () => {
@@ -367,10 +330,7 @@ document.addEventListener('visibilitychange', () => {
 // ---- Étape suivante (à brancher : choix du handpan) ----------------------
 // Le bouton est en place ; l'écran de choix sera ajouté quand les visuels et
 // les sons des handpans seront livrés.
-choose.addEventListener('click', () => {
-  if (musiqueLancee) suivre()
-  else toast('Écoutez… quelqu’un ne va pas tarder à jouer.')
-})
+choose.hidden = true
 
 guide.addEventListener('click', () => { if (livre) ouvrirLivre(); else toast('Le guide a besoin de WebGL pour s’ouvrir.') })
 
