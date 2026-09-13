@@ -245,8 +245,7 @@ function entrerAtelier() {
       // tout l'instrument est sous les mains sans tourner la tête.
       foret.statique = true
       foret.poseForcee = { yaw: ATELIER_YAW, pitch: PRESENTOIR.pitch }
-      murmure.textContent = 'Touchez les champs pour jouer.'
-      setTimeout(() => { if (murmure.textContent.startsWith('Touchez les champs')) murmure.textContent = '' }, 5000)
+      murmure.textContent = ''
       // La première note, offerte : c'est sa voix.
       setTimeout(() => ambiance.noteProche(r.modele.notes[0], 0.7, 0), 900)
     } else if (r?.type === 'repose') {

@@ -45,7 +45,10 @@ const SOL = -1.5
 const TABLE_AV = -0.74, TABLE_AR = -0.42
 const R_AV = 1.8, R_AR = 2.6
 // Le présentoir : la petite table juste devant soi où vient le handpan choisi.
-export const PRESENTOIR = { x: 0, y: -0.78, z: -0.82, pitch: -40 * DEG }
+// Vu de haut : la caméra plonge à 52°, le présentoir est plus bas encore
+// (64° sous l'horizon, à 87 cm), pour que l'instrument entier tienne dans
+// le bas de l'écran, du centre jusqu'aux genoux.
+export const PRESENTOIR = { x: 0, y: -0.9, z: -0.38, pitch: -52 * DEG }
 
 function textureBois(teinte = '#6b4a2e', veines = '#3e2a17', larg = 512, haut = 512, lattes = 6) {
   const cv = document.createElement('canvas'); cv.width = larg; cv.height = haut
