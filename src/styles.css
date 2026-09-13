@@ -243,13 +243,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hud.is-choisi .carte { display: inline-flex; align-items: baseline; gap: 8px; }
 .hud.is-choisi .carte__nom { font-size: 15px; letter-spacing: .02em; text-shadow: 0 1px 10px rgba(0,0,0,.5); }
 .hud.is-choisi .carte__sous { display: none; }
-.hud.is-choisi #guide {
+.hud.is-choisi #guide, .hud.is-choisi #retourner {
   padding: 7px 12px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; font-weight: 500;
   background: rgba(11,26,19,.38); color: rgba(246,249,248,.85); border: 1px solid rgba(246,249,248,.22); box-shadow: none;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
 .hud.is-choisi #guide .btn__arrow { display: none; }
-.hud.is-choisi #guide:hover { transform: none; background: rgba(11,26,19,.6); }
+.hud.is-choisi #guide:hover, .hud.is-choisi #retourner:hover { transform: none; background: rgba(11,26,19,.6); }
+#retourner { animation: none; opacity: 1; }
 
 /* ---- Le livre ouvert ---- */
 .hud.is-lecture .hud__walk, .hud.is-lecture .hud__bottom, .hud.is-lecture .hud__hint { display: none; }

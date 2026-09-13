@@ -20,7 +20,7 @@ const entry = $('#entry'), hud = $('#hud'), veil = $('#veil'), hint = $('#entry-
 const btnSon = $('#enter-sound'), btnSilence = $('#enter-silent'), toggle = $('#sound-toggle')
 const lookHint = $('#look-hint'), choose = $('#choose'), walk = $('#walk'), murmure = $('#murmure')
 const run = $('#run')
-const carte = $('#carte'), carteNom = $('#carte-nom'), carteSous = $('#carte-sous'), guide = $('#guide')
+const carte = $('#carte'), carteNom = $('#carte-nom'), carteSous = $('#carte-sous'), guide = $('#guide'), retourner = $('#retourner')
 const lecture = $('#lecture'), livreNum = $('#livre-num'), reposer = $('#reposer')
 
 const ambiance = new Ambiance()
@@ -157,7 +157,7 @@ if (foret) {
 
 // ---- Entrée --------------------------------------------------------------
 // On arrive directement dans le temple : la brume monte sur l'écran d'entrée,
-// et se dissipe sur les tables et les seize handpans.
+// et se dissipe sur les tables et les dix-sept handpans.
 let entre = false
 async function entrer(avecSon) {
   if (entre) return
@@ -211,7 +211,7 @@ async function entrer(avecSon) {
   // Venu d'une fiche produit : ce handpan-là vient tout de suite sur les genoux.
   if (choisirDepuisLien()) { hud.classList.add('is-settled') }
   else {
-    murmure.textContent = 'Seize handpans. Touchez celui qui vous appelle.'
+    murmure.textContent = 'Dix-sept handpans. Touchez celui qui vous appelle.'
     await attendre(3300)
     hud.classList.add('is-settled')
   }
@@ -257,6 +257,9 @@ function entrerAtelier() {
 function surChoix(modele) {
   carteNom.textContent = modele.nom; carteSous.textContent = `${modele.gamme} · ${modele.sous}`
   carte.hidden = false; guide.hidden = false; reposer.hidden = false
+  // Les instruments à deux étages se retournent pour jouer les notes du dessous.
+  retourner.hidden = !modele.dessous
+  retourner.querySelector('span').textContent = 'Voir le dessous'
   hud.classList.add('is-choisi')
   // Vue fixe : le regard se pose sur le présentoir et n'en bouge plus,
   // tout l'instrument est sous les mains sans tourner la tête.
@@ -283,7 +286,7 @@ function choisirDepuisLien() {
 function reposerHandpan() {
   if (atelier) atelier.choisi = null
   ambiance.sourdine(false)
-  carte.hidden = true; reposer.hidden = true
+  carte.hidden = true; reposer.hidden = true; retourner.hidden = true
   hud.classList.remove('is-choisi')
   murmure.textContent = ''
   if (foret) {
@@ -294,6 +297,14 @@ function reposerHandpan() {
   }
 }
 reposer.addEventListener('click', reposerHandpan)
+retourner.addEventListener('click', () => {
+  if (!atelier) return
+  const bas = atelier.retourner()
+  retourner.querySelector('span').textContent = bas ? 'Voir le dessus' : 'Voir le dessous'
+  // La première note de la face qu'on découvre.
+  const m = atelier.choisi?.userData.modele
+  if (m) setTimeout(() => ambiance.noteProche(bas ? m.notesBas[0] : m.notes[0], 0.7, 0), 1100)
+})
 
 // Le déverrouillage audio se fait ici, dans le clic, avant toute attente.
 btnSon.addEventListener('click', () => { ambiance.unlock(); entrer(true) })

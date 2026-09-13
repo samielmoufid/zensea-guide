@@ -8,7 +8,7 @@
 // reflète dans l'acier et qui éclaire le bois.
 
 import * as THREE from 'three'
-import { creerHandpan, R, H_BAS } from './handpan.js'
+import { creerHandpan, R, H_BAS, H_HAUT } from './handpan.js'
 import { TEMPLE_YAW, SUN_DIR } from './foret.js'
 
 const DEG = Math.PI / 180
@@ -19,8 +19,10 @@ const lerp = (a, b, k) => a + (b - a) * k
 // les grandes gammes). Le nombre de champs de chaque modèle est celui qu'on
 // compte sur sa photo ; la disposition suit le zigzag classique, la note la
 // plus grave devant soi, puis en montant à gauche, à droite, jusqu'en haut.
-const N = { re3: 146.83, la3: 220.0, sib3: 233.08, do4: 261.63, re4: 293.66, mi4: 329.63, fa4: 349.23, sol4: 392.0, la4: 440.0, do5: 523.25, re5: 587.33 }
+const N = { re3: 146.83, la3: 220.0, sib3: 233.08, si3: 246.94, do4: 261.63, re4: 293.66, mi4: 329.63, fa4: 349.23, fad4: 369.99, sol4: 392.0, la4: 440.0, si4: 493.88, do5: 523.25, re5: 587.33 }
 const KURD = [N.re3, N.la3, N.sib3, N.do4, N.re4, N.mi4, N.fa4, N.sol4, N.la4, N.do5, N.re5]
+// Ré Gong, les huit notes sous la coque du 17 notes : la3 si3 ré4 mi4 fa♯4 la4 si4 ré5.
+const GONG = [N.la3, N.si3, N.re4, N.mi4, N.fad4, N.la4, N.si4, N.re5]
 // n notes au total (ding compris) → ding + les n−1 premiers champs.
 const kurd = n => KURD.slice(0, n)
 const GAMME = n => `Ré mineur Kurd · ${n} notes`
@@ -42,9 +44,9 @@ export const MODELES = [
   { id: '117', nom: 'Spirale or clair', sous: 'Un or pâle, presque champagne, et des champs à peine creusés.', rough: 0.3, n: 9 },
   { id: '119', nom: 'Mandala doré', sous: 'Un mandala fin gravé autour du ding, sur un doré clair.', rough: 0.3, n: 10 },
   { id: '121', nom: 'Mandala argenté', sous: 'Un argent clair, mandala au centre, corde tressée au rebord.', rough: 0.3, corde: true, n: 9 },
-  // 17 notes : la couronne du dessus (celle qu'on joue ici) plus des graves et
-  // des aigus sous la coque, hors de portée dans cette vue.
-  { id: '125', nom: 'Doré grande gamme · 17 notes', sous: 'Deux étages de notes : une couronne étendue et des graves sous la coque.', rough: 0.32, corde: true, n: 9, gamme: 'Ré mineur Kurd · 17 notes' }
+  // 17 notes : neuf dessus (ré Kurd), huit dessous (ré Gong). On le retourne pour jouer le dessous.
+  { id: '125', nom: 'Doré grande gamme · 17 notes', sous: 'Neuf notes dessus en ré Kurd, huit dessous en ré Gong : on le retourne pour changer de gamme.', rough: 0.32, corde: true, n: 9, dessous: 8, notesBas: GONG, gamme: '17 notes · dessus ré Kurd, dessous ré Gong' },
+  { id: '1026', nom: 'Blanc', sous: 'Un blanc mat, le seul de la maison, avec un joint noir au rebord.', rough: 0.62, metal: 0.12, n: 9 }
 ].map(m => ({ ...m, notes: kurd(m.n), gamme: m.gamme ?? GAMME(m.n) }))
 
 // Vue d'ouverture : face aux tables, la forêt et le sentier derrière.
@@ -93,6 +95,7 @@ export class Atelier {
     this.scene = new THREE.Scene()
     this.pret = false
     this.choisi = null
+    this.retourne = false
     this.survol = null
     this.onNote = null
     this.t0 = performance.now()
@@ -134,7 +137,7 @@ export class Atelier {
       try {
         const d = await (await fetch(this.base + 'atelier/handpans/champs.json')).json()
         for (const g of this.handpans) g.userData.placerChamps(d[g.userData.modele.id])
-        this.cibles = this.handpans.flatMap(g => [g.userData.coque, ...g.userData.champs])
+        this.cibles = this._cibles()
       } catch (e) { console.warn('champs.json', e) }
     })()
   }
@@ -293,7 +296,7 @@ export class Atelier {
   _handpans() {
     const opts = { loader: this.loader, base: this.base + 'atelier/handpans/', mobile: this.mobile, aniso: this.aniso }
     this.handpans = MODELES.map(m => creerHandpan(m, opts))
-    // Sept devant, neuf derrière ; chacun tourné vers le centre et incliné vers nous.
+    // Huit devant, neuf derrière ; chacun tourné vers le centre et incliné vers nous.
     const poser = (g, rayon, angDeg, y) => {
       const a = angDeg * DEG
       g.position.set(Math.cos(a) * rayon, y + H_BAS, -Math.sin(a) * rayon)
@@ -302,10 +305,16 @@ export class Atelier {
       g.rotateX(6 * DEG)
       g.userData.repos.copy(g.position); g.userData.reposQ.copy(g.quaternion)
     }
-    for (let i = 0; i < 7; i++) poser(this.handpans[i], R_AV, 90 + 63 - i * 21, TABLE_AV)
-    for (let i = 0; i < 9; i++) poser(this.handpans[7 + i], R_AR, 90 + 72 - i * 18, TABLE_AR)
+    for (let i = 0; i < 8; i++) poser(this.handpans[i], R_AV, 90 + 63 - i * 18, TABLE_AV)
+    for (let i = 0; i < 9; i++) poser(this.handpans[8 + i], R_AR, 90 + 72 - i * 18, TABLE_AR)
     for (const g of this.handpans) this.mobilier.add(g)
-    this.cibles = this.handpans.flatMap(g => [g.userData.coque, ...g.userData.champs])
+    this.cibles = this._cibles()
+  }
+
+  // Ce que le doigt peut toucher : la coque (le dessous aussi pour les
+  // instruments à deux étages) et les champs de notes.
+  _cibles() {
+    return this.handpans.flatMap(g => [g.userData.coque, ...(g.userData.modele.dessous ? [g.userData.dessous] : []), ...g.userData.champs])
   }
 
   // ---- Lanternes de papier ---------------------------------------------------------
@@ -399,12 +408,15 @@ export class Atelier {
     const g = obj.userData.handpan || obj.parent
     if (this.choisi !== g) { this.choisir(g); return { type: 'choix', modele: g.userData.modele } }
     if (!obj.userData.note) {
-      // Le doigt est sur la coque : le champ le plus proche du point touché.
-      const hit = this.ray.intersectObject(g.userData.coque, false)[0]
+      // Le doigt est sur la coque (ou sur le dessous, instrument retourné) :
+      // le champ le plus proche du point touché, du même côté.
+      const bas = obj === g.userData.dessous
+      const hit = this.ray.intersectObject(bas ? g.userData.dessous : g.userData.coque, false)[0]
       if (hit) {
         const loc = g.worldToLocal(hit.point.clone())
         let best = null, dmin = Infinity
         for (const c of g.userData.champs) {
+          if (!!c.userData.bas !== bas) continue
           const d = Math.hypot(c.position.x - loc.x, c.position.z - loc.z)
           if (d < dmin) { dmin = d; best = c }
         }
@@ -423,7 +435,14 @@ export class Atelier {
     return null
   }
 
-  choisir(g) { this.choisi = g }
+  choisir(g) { this.choisi = g; this.retourne = false }
+
+  // Retourner l'instrument choisi (ceux qui ont des notes sous la coque).
+  retourner() {
+    if (!this.choisi?.userData.modele.dessous) return false
+    this.retourne = !this.retourne
+    return this.retourne
+  }
 
   rendu(camera, dt) {
     if (!this.pret) return
@@ -450,24 +469,28 @@ export class Atelier {
     for (const g of this.handpans) {
       const u = g.userData
       const estChoisi = this.choisi === g
-      // Choisi : posé à plat sur le présentoir (le fond de la coque sur le bois).
-      const cible = estChoisi ? new THREE.Vector3(PRESENTOIR.x, PRESENTOIR.y + H_BAS, PRESENTOIR.z) : u.repos
+      // Choisi : posé à plat sur le présentoir (le fond de la coque sur le bois),
+      // ou retourné, le ding contre le bois, pour jouer les notes du dessous.
+      const retourne = estChoisi && this.retourne
+      const cible = estChoisi ? new THREE.Vector3(PRESENTOIR.x, PRESENTOIR.y + (retourne ? H_HAUT : H_BAS), PRESENTOIR.z) : u.repos
       g.position.lerp(cible, 0.07)
-      const q = estChoisi ? new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0)) : u.reposQ
+      const q = estChoisi ? new THREE.Quaternion().setFromEuler(new THREE.Euler(retourne ? Math.PI : 0, 0, 0)) : u.reposQ
       g.quaternion.slerp(q, 0.07)
       const s = 1
       g.scale.setScalar(lerp(g.scale.x, s, 0.07))
       const survole = this.survol === g && !this.choisi
       u.coque.material.emissive.setHex(survole ? 0x2a1e10 : 0x000000)
-      // Marqueurs des notes : visibles sur le présentoir, éteints sur les tables ; ils s'allument à la frappe.
-      u.marque = lerp(u.marque, estChoisi ? 1 : 0, 0.08)
+      // Marqueurs des notes : visibles sur le présentoir (ceux de la face qu'on
+      // voit), éteints sur les tables ; ils s'allument à la frappe.
+      u.marque = lerp(u.marque, estChoisi && !retourne ? 1 : 0, 0.08)
+      u.marqueBas = lerp(u.marqueBas, retourne ? 1 : 0, 0.08)
       for (const mk of u.marqueurs) {
         mk.userData.pulse *= 0.9
-        mk.material.opacity = u.marque * (0.28 + 0.16 * Math.sin(t * 2.2 + mk.position.x * 9) + 0.7 * mk.userData.pulse)
+        mk.material.opacity = (mk.userData.bas ? u.marqueBas : u.marque) * (0.28 + 0.16 * Math.sin(t * 2.2 + mk.position.x * 9) + 0.7 * mk.userData.pulse)
         mk.scale.setScalar(1 + 0.35 * mk.userData.pulse)
         mk.visible = mk.material.opacity > 0.01
       }
-      u.ombre.visible = true
+      u.ombre.visible = !retourne
       if (u.halo.visible) {
         u.halo.material.opacity *= 0.9; u.halo.scale.multiplyScalar(1.03)
         if (u.halo.material.opacity < 0.02) u.halo.visible = false

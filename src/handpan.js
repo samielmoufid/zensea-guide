@@ -7,7 +7,7 @@
 import * as THREE from 'three'
 
 export const R = 0.27          // rayon (Ø 54 cm)
-const H_HAUT = 0.09            // hauteur de la calotte supérieure
+export const H_HAUT = 0.09     // hauteur de la calotte supérieure
 export const H_BAS = 0.115     // profondeur de la coque inférieure (une vraie lentille, pas une assiette)
 
 let ropeTex = null
@@ -40,14 +40,15 @@ function calotte(haut) {
   }
   // LatheGeometry tourne autour de Y ; le profil part du centre (r = 0).
   const geo = new THREE.LatheGeometry(pts, 96)
-  if (haut) {
-    const pos = geo.attributes.position, uv = geo.attributes.uv
-    const k = 1 / (2 * R * 1.02)
-    for (let i = 0; i < pos.count; i++) {
-      uv.setXY(i, 0.5 + pos.getX(i) * k, 0.5 - pos.getZ(i) * k)
-    }
-    uv.needsUpdate = true
+  // UV = projection verticale. Le dessous est photographié par en dessous :
+  // une fois l'instrument retourné autour de l'axe gauche-droite, la photo se
+  // lit à l'endroit (z inversé).
+  const pos = geo.attributes.position, uv = geo.attributes.uv
+  const k = 1 / (2 * R * 1.02)
+  for (let i = 0; i < pos.count; i++) {
+    uv.setXY(i, 0.5 + pos.getX(i) * k, 0.5 + (haut ? -1 : 1) * pos.getZ(i) * k)
   }
+  uv.needsUpdate = true
   geo.computeVertexNormals()
   return geo
 }
@@ -71,9 +72,9 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
   g.add(coque)
   // La coque du dessous : le même acier, sans champs de notes. Sa teinte est
   // prise sur la photo (le bord du disque) dès que celle-ci est chargée.
-  const acierBas = new THREE.MeshPhysicalMaterial({ color: 0x8a8a8c, metalness: 0.92, roughness: (m.rough ?? 0.34) + 0.08, clearcoat: 0.1, envMapIntensity: 0.9 })
+  const acierBas = new THREE.MeshPhysicalMaterial({ color: 0x8a8a8c, metalness: 0.92, roughness: (m.rough ?? 0.34) + 0.08, clearcoat: 0.1, envMapIntensity: 0.9, normalScale: new THREE.Vector2(0.5, 0.5) })
   const dessous = new THREE.Mesh(calotte(false), acierBas)
-  dessous.castShadow = true
+  dessous.castShadow = true; dessous.receiveShadow = true
   g.add(dessous)
 
   // Rebord : corde tressée ou joint noir.
@@ -98,34 +99,31 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
     return new THREE.Vector3(-Math.cos(ang) * pente, 1, -Math.sin(ang) * pente).normalize()
   }
   const matMarqueur = () => new THREE.MeshBasicMaterial({ color: 0xfff1cf, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
-  const poser = (r, ang, taille, note, idx) => {
-    const y = hauteur(r)
+  // bas = true : champ sous la coque (visible une fois l'instrument retourné).
+  const poser = (r, ang, taille, note, idx, bas = false) => {
+    const y = bas ? -hauteur(r) * (H_BAS / H_HAUT) : hauteur(r)
+    const s = bas ? -1 : 1
     const c = new THREE.Mesh(new THREE.CircleGeometry(taille, 20), cible)
-    c.position.set(Math.cos(ang) * r, y + 0.002, Math.sin(ang) * r)
-    c.rotation.x = -Math.PI / 2
-    c.userData = { note, idx, handpan: g }
+    c.position.set(Math.cos(ang) * r, y + 0.002 * s, Math.sin(ang) * r)
+    c.rotation.x = -Math.PI / 2 * s
+    c.userData = { note, idx, handpan: g, bas }
     g.add(c); champs.push(c)
     // Marqueur : un anneau fin de lumière autour du champ, posé sur la pente,
     // pour que chaque note se voie même sur un acier sombre.
     const mk = new THREE.Mesh(new THREE.RingGeometry(taille * 0.82, taille * 0.98, 40), matMarqueur())
-    mk.position.set(Math.cos(ang) * r, y + 0.003, Math.sin(ang) * r)
-    mk.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normale(r, ang))
-    mk.userData = { pulse: 0 }
+    mk.position.set(Math.cos(ang) * r, y + 0.003 * s, Math.sin(ang) * r)
+    mk.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normale(r, ang).multiplyScalar(s))
+    mk.userData = { pulse: 0, bas }
     g.add(mk); marqueurs.push(mk)
     c.userData.marqueur = mk
   }
   poser(0, 0, 0.07, m.notes[0], 0)
   for (let k = 0; k < 8; k++) poser(R * 0.63, k * Math.PI / 4 - Math.PI / 2, 0.05, m.notes[k + 1] ?? m.notes[0] * 2, k + 1)
-  // Les vrais champs, mesurés sur la photo (rayon unitaire, y vers le bas de l'image).
-  const placerChamps = (d) => {
-    if (!d?.champs?.length) return
-    for (const c of champs.splice(0)) g.remove(c)
-    for (const mk of marqueurs.splice(0)) g.remove(mk)
-    poser(0, 0, R * (d.rayonDing ?? 0.17) * 0.95, m.notes[0], 0)
-    // Zigzag classique : la note la plus grave devant le joueur (bas de la
-    // photo), puis en montant, à gauche, à droite, à gauche… jusqu'en haut.
-    // a = 0 devant, négatif à gauche, ±π tout en haut.
-    const pts = d.champs.map(([x, y]) => ({ x, y, a: Math.atan2(x, y) })).sort((p, q) => Math.abs(p.a) - Math.abs(q.a))
+  // Zigzag classique : la note la plus grave devant le joueur (bas de la
+  // photo), puis en montant, à gauche, à droite, à gauche… jusqu'en haut.
+  // a = 0 devant, négatif à gauche, ±π tout en haut.
+  const zigzag = (liste) => {
+    const pts = liste.map(([x, y]) => ({ x, y, a: Math.atan2(x, y) })).sort((p, q) => Math.abs(p.a) - Math.abs(q.a))
     const ordre = []
     for (let i = 0; i < pts.length;) {
       const p = pts[i], q = pts[i + 1]
@@ -133,10 +131,26 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
       if (q && p.a * q.a < 0 && Math.abs(Math.abs(q.a) - Math.abs(p.a)) < 0.6) { ordre.push(p.a < q.a ? p : q, p.a < q.a ? q : p); i += 2 }
       else { ordre.push(p); i++ }
     }
-    ordre.forEach((c, k) => {
+    return ordre
+  }
+  // Les vrais champs, mesurés sur la photo (rayon unitaire, y vers le bas de l'image).
+  const placerChamps = (d) => {
+    if (!d?.champs?.length) return
+    for (const c of champs.splice(0)) g.remove(c)
+    for (const mk of marqueurs.splice(0)) g.remove(mk)
+    poser(0, 0, R * (d.rayonDing ?? 0.17) * 0.95, m.notes[0], 0)
+    zigzag(d.champs).forEach((c, k) => {
       const r = Math.hypot(c.x, c.y) * R, ang = Math.atan2(c.y, c.x)
       poser(r, ang, R * (d.rayonChamp ?? 0.095) * 1.15, m.notes[k + 1] ?? m.notes[m.notes.length - 1] * 1.5, k + 1)
     })
+    // Les notes du dessous (grandes gammes) : photo prise par en dessous,
+    // l'instrument se retourne autour de l'axe gauche-droite (z inversé).
+    if (d.dessous?.length && m.notesBas) {
+      zigzag(d.dessous).forEach((c, k) => {
+        const r = Math.hypot(c.x, c.y) * R, ang = Math.atan2(-c.y, c.x)
+        poser(r, ang, R * (d.rayonDessous ?? 0.09) * 1.15, m.notesBas[k] ?? m.notesBas[m.notesBas.length - 1] * 1.5, 100 + k, true)
+      })
+    }
   }
 
   // Halo de frappe : un anneau qui s'allume sur le champ touché.
@@ -179,9 +193,17 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
         acier.normalMap = nm; acier.needsUpdate = true
         res(true)
       }, undefined, () => res(true))
+      // Le dessous photographié (grandes gammes) : sa propre photo et son relief.
+      if (m.dessous) {
+        loader.load(`${base}hp-${m.id}b.jpg`, tb => {
+          tb.colorSpace = THREE.SRGBColorSpace; tb.anisotropy = aniso
+          acierBas.map = tb; acierBas.color.setHex(0xffffff); acierBas.metalness = m.metal ?? 0.78; acierBas.needsUpdate = true
+          loader.load(`${base}nm-${m.id}b.jpg`, nb => { nb.anisotropy = aniso; acierBas.normalMap = nb; acierBas.needsUpdate = true }, undefined, () => {})
+        }, undefined, () => {})
+      }
     }, undefined, () => { acier.color.setHex(m.couleur ?? 0x555a60); acier.metalness = 0.9; res(false) })
   })
 
-  g.userData = { modele: m, champs, marqueurs, coque, ombre, halo, charger, placerChamps, marque: 0, repos: new THREE.Vector3(), reposQ: new THREE.Quaternion(), reposS: 1 }
+  g.userData = { modele: m, champs, marqueurs, coque, dessous, ombre, halo, charger, placerChamps, marque: 0, marqueBas: 0, repos: new THREE.Vector3(), reposQ: new THREE.Quaternion(), reposS: 1 }
   return g
 }
