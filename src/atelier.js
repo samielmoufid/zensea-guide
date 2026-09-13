@@ -398,13 +398,14 @@ export class Atelier {
           const d = Math.hypot(c.position.x - loc.x, c.position.z - loc.z)
           if (d < dmin) { dmin = d; best = c }
         }
-        if (best && dmin < R * 0.2) obj = best
+        if (best && dmin < R * 0.4) obj = best
       }
     }
     if (obj.userData.note) {
       const pan = obj.position.x * 2
       this.onNote?.(obj.userData.note, 0.9, pan)
       obj.userData.frappe = performance.now()
+      if (obj.userData.marqueur) obj.userData.marqueur.userData.pulse = 1
       const halo = g.userData.halo
       halo.visible = true; halo.position.copy(obj.position); halo.material.opacity = 0.9; halo.scale.setScalar(0.8)
       return { type: 'note', note: obj.userData.note }
@@ -448,6 +449,14 @@ export class Atelier {
       g.scale.setScalar(lerp(g.scale.x, s, 0.07))
       const survole = this.survol === g && !this.choisi
       u.coque.material.emissive.setHex(survole ? 0x2a1e10 : 0x000000)
+      // Marqueurs des notes : visibles sur le présentoir, éteints sur les tables ; ils s'allument à la frappe.
+      u.marque = lerp(u.marque, estChoisi ? 1 : 0, 0.08)
+      for (const mk of u.marqueurs) {
+        mk.userData.pulse *= 0.9
+        mk.material.opacity = u.marque * (0.28 + 0.16 * Math.sin(t * 2.2 + mk.position.x * 9) + 0.7 * mk.userData.pulse)
+        mk.scale.setScalar(1 + 0.35 * mk.userData.pulse)
+        mk.visible = mk.material.opacity > 0.01
+      }
       u.ombre.visible = true
       if (u.halo.visible) {
         u.halo.material.opacity *= 0.9; u.halo.scale.multiplyScalar(1.03)

@@ -89,15 +89,30 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
 
   // Champs de notes (invisibles) : là où le doigt frappe. Disposition
   // générique en attendant les notes réelles : ding au centre, huit autour.
-  const champs = []
+  const champs = [], marqueurs = []
   const cible = new THREE.MeshBasicMaterial({ visible: false })
+  // Hauteur et normale de la calotte au rayon r (pour poser les marqueurs à plat sur l'acier).
+  const hauteur = r => H_HAUT * Math.pow(Math.max(0, 1 - Math.pow(r / R, 2.3)), 0.62)
+  const normale = (r, ang) => {
+    const dr = 0.002, pente = (hauteur(r + dr) - hauteur(Math.max(0, r - dr))) / (2 * dr)
+    return new THREE.Vector3(-Math.cos(ang) * pente, 1, -Math.sin(ang) * pente).normalize()
+  }
+  const matMarqueur = () => new THREE.MeshBasicMaterial({ color: 0xfff1cf, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
   const poser = (r, ang, taille, note, idx) => {
-    const y = H_HAUT * Math.pow(Math.max(0, 1 - Math.pow(r / R, 2.3)), 0.62)
+    const y = hauteur(r)
     const c = new THREE.Mesh(new THREE.CircleGeometry(taille, 20), cible)
     c.position.set(Math.cos(ang) * r, y + 0.002, Math.sin(ang) * r)
     c.rotation.x = -Math.PI / 2
     c.userData = { note, idx, handpan: g }
     g.add(c); champs.push(c)
+    // Marqueur : un anneau fin de lumière autour du champ, posé sur la pente,
+    // pour que chaque note se voie même sur un acier sombre.
+    const mk = new THREE.Mesh(new THREE.RingGeometry(taille * 0.82, taille * 0.98, 40), matMarqueur())
+    mk.position.set(Math.cos(ang) * r, y + 0.003, Math.sin(ang) * r)
+    mk.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normale(r, ang))
+    mk.userData = { pulse: 0 }
+    g.add(mk); marqueurs.push(mk)
+    c.userData.marqueur = mk
   }
   poser(0, 0, 0.07, m.notes[0], 0)
   for (let k = 0; k < 8; k++) poser(R * 0.63, k * Math.PI / 4 - Math.PI / 2, 0.05, m.notes[k + 1] ?? m.notes[0] * 2, k + 1)
@@ -105,6 +120,7 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
   const placerChamps = (d) => {
     if (!d?.champs?.length) return
     for (const c of champs.splice(0)) g.remove(c)
+    for (const mk of marqueurs.splice(0)) g.remove(mk)
     poser(0, 0, R * (d.rayonDing ?? 0.17) * 0.95, m.notes[0], 0)
     // Dans le sens horaire en partant du bas (le champ le plus près du joueur = la note la plus grave).
     const ordre = d.champs.map(([x, y]) => ({ x, y, a: Math.atan2(y, x) })).sort((p, q) => ((p.a - Math.PI / 2 + 4 * Math.PI) % (2 * Math.PI)) - ((q.a - Math.PI / 2 + 4 * Math.PI) % (2 * Math.PI)))
@@ -157,6 +173,6 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
     }, undefined, () => { acier.color.setHex(m.couleur ?? 0x555a60); acier.metalness = 0.9; res(false) })
   })
 
-  g.userData = { modele: m, champs, coque, ombre, halo, charger, placerChamps, repos: new THREE.Vector3(), reposQ: new THREE.Quaternion(), reposS: 1 }
+  g.userData = { modele: m, champs, marqueurs, coque, ombre, halo, charger, placerChamps, marque: 0, repos: new THREE.Vector3(), reposQ: new THREE.Quaternion(), reposS: 1 }
   return g
 }
