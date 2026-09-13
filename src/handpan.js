@@ -7,8 +7,8 @@
 import * as THREE from 'three'
 
 export const R = 0.27          // rayon (Ø 54 cm)
-const H_HAUT = 0.085           // hauteur de la calotte supérieure
-const H_BAS = 0.075            // profondeur de la coque inférieure
+const H_HAUT = 0.09            // hauteur de la calotte supérieure
+export const H_BAS = 0.115     // profondeur de la coque inférieure (une vraie lentille, pas une assiette)
 
 let ropeTex = null
 function textureCorde() {
@@ -64,12 +64,15 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
   })
   const coque = new THREE.Mesh(calotte(true), acier)
   g.add(coque)
-  const dessous = new THREE.Mesh(calotte(false), new THREE.MeshStandardMaterial({ color: m.dessous ?? 0x2a2a2c, metalness: 0.85, roughness: 0.42, envMapIntensity: 0.8 }))
+  // La coque du dessous : le même acier, sans champs de notes. Sa teinte est
+  // prise sur la photo (le bord du disque) dès que celle-ci est chargée.
+  const acierBas = new THREE.MeshPhysicalMaterial({ color: 0x8a8a8c, metalness: 0.92, roughness: (m.rough ?? 0.34) + 0.08, clearcoat: 0.1, envMapIntensity: 0.9 })
+  const dessous = new THREE.Mesh(calotte(false), acierBas)
   g.add(dessous)
 
   // Rebord : corde tressée ou joint noir.
   const rebord = new THREE.Mesh(
-    new THREE.TorusGeometry(R + 0.004, m.corde ? 0.013 : 0.008, 12, 96),
+    new THREE.TorusGeometry(R + 0.004, m.corde ? 0.014 : 0.01, 12, 96),
     m.corde
       ? new THREE.MeshStandardMaterial({ map: textureCorde(), roughness: 0.95, metalness: 0 })
       : new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.7, metalness: 0.05 })
@@ -115,6 +118,18 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
         cv.getContext('2d').drawImage(tex.image, 0, 0, 640, 640); tex.image = cv
       }
       acier.map = tex; acier.needsUpdate = true
+      // Teinte du dessous : moyenne d'un anneau près du bord de la photo.
+      try {
+        const cv = document.createElement('canvas'); cv.width = cv.height = 64
+        const c = cv.getContext('2d'); c.drawImage(tex.image, 0, 0, 64, 64)
+        const d = c.getImageData(0, 0, 64, 64).data
+        let r = 0, gg = 0, b = 0, n = 0
+        for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) {
+          const dd = Math.hypot(x - 31.5, y - 31.5) / 31.5
+          if (dd > 0.6 && dd < 0.86) { const i = (y * 64 + x) * 4; r += d[i]; gg += d[i + 1]; b += d[i + 2]; n++ }
+        }
+        if (n) acierBas.color.setRGB(r / n / 255, gg / n / 255, b / n / 255).convertSRGBToLinear().multiplyScalar(0.9)
+      } catch {}
       loader.load(`${base}nm-${m.id}.jpg`, nm => {
         nm.anisotropy = aniso
         acier.normalMap = nm; acier.needsUpdate = true

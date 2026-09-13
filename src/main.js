@@ -3,7 +3,7 @@
 
 import { Foret, TEMPLE_YAW } from './foret.js'
 import { Ambiance } from './ambiance.js'
-import { Atelier, ATELIER_YAW } from './atelier.js'
+import { Atelier, ATELIER_YAW, PRESENTOIR } from './atelier.js'
 import { Livre } from './livre.js'
 import { Loupe } from './loupe.js'
 
@@ -21,7 +21,7 @@ const btnSon = $('#enter-sound'), btnSilence = $('#enter-silent'), toggle = $('#
 const lookHint = $('#look-hint'), choose = $('#choose'), walk = $('#walk'), murmure = $('#murmure')
 const run = $('#run')
 const carte = $('#carte'), carteNom = $('#carte-nom'), carteSous = $('#carte-sous'), guide = $('#guide')
-const lecture = $('#lecture'), livreNum = $('#livre-num')
+const lecture = $('#lecture'), livreNum = $('#livre-num'), reposer = $('#reposer')
 
 const ambiance = new Ambiance()
 let foret = null
@@ -239,19 +239,36 @@ function entrerAtelier() {
     const r = atelier.toucher(foret.camera, nx, ny)
     if (r?.type === 'choix') {
       carteNom.textContent = r.modele.nom; carteSous.textContent = r.modele.sous
-      carte.hidden = false; guide.hidden = false
+      carte.hidden = false; guide.hidden = false; reposer.hidden = false
       hud.classList.add('is-choisi')
-      murmure.textContent = 'Touchez les champs pour jouer · touchez à côté pour le reposer.'
+      // Vue fixe : le regard se pose sur le présentoir et n'en bouge plus,
+      // tout l'instrument est sous les mains sans tourner la tête.
+      foret.statique = true
+      foret.poseForcee = { yaw: ATELIER_YAW, pitch: PRESENTOIR.pitch }
+      murmure.textContent = 'Touchez les champs pour jouer.'
       setTimeout(() => { if (murmure.textContent.startsWith('Touchez les champs')) murmure.textContent = '' }, 5000)
       // La première note, offerte : c'est sa voix.
-      setTimeout(() => ambiance.noteProche(r.modele.notes[0], 0.7, 0), 700)
+      setTimeout(() => ambiance.noteProche(r.modele.notes[0], 0.7, 0), 900)
     } else if (r?.type === 'repose') {
-      carte.hidden = true
-      hud.classList.remove('is-choisi')
-      murmure.textContent = ''
+      reposerHandpan()
     }
   }
-  // Survol à la souris : le handpan s'éclaire.
+  // On repose le handpan : il retourne sur sa table, le regard redevient libre.
+function reposerHandpan() {
+  if (atelier) atelier.choisi = null
+  carte.hidden = true; reposer.hidden = true
+  hud.classList.remove('is-choisi')
+  murmure.textContent = ''
+  if (foret) {
+    foret.statique = false
+    foret.poseForcee = null
+    foret.dragYaw = 0; foret.dragPitch = 0; foret.inertie = null
+    if (foret.gyroBrut) foret.gyroYaw0 = foret.gyroBrut.yaw
+  }
+}
+reposer.addEventListener('click', reposerHandpan)
+
+// Survol à la souris : le handpan s'éclaire.
   window.addEventListener('pointermove', e => {
     if (atelier.choisi || livre?.ouvert) return
     const obj = atelier.viser(foret.camera, (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1)

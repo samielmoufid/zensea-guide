@@ -232,6 +232,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hud.is-atelier .hud__hint { display: none; }
 #guide { opacity: 1; transform: none; }
 /* Handpan choisi : il occupe le bas de l'écran, la carte remonte en haut. */
+.hud__reposer { animation: none; opacity: 1; }
+.hud.is-lecture .hud__reposer { display: none; }
 .hud.is-choisi .hud__bottom { bottom: auto; top: max(64px, calc(env(safe-area-inset-top) + 52px)); gap: 12px; }
 .hud.is-choisi .hud__murmure { font-size: clamp(17px, 3vw, 22px); }
 

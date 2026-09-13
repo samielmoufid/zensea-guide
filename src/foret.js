@@ -74,6 +74,7 @@ export class Foret {
     this.autre = null            // scène de l'atelier quand on y est
     this.lecture = false         // le livre est ouvert : le doigt lui appartient
     this.statique = false        // vue fixe : on ne regarde pas autour, on ne marche pas
+    this.poseForcee = null       // { yaw, pitch } : le regard y va et y reste (handpan sur le présentoir)
     this.apres = null            // rendu par-dessus la scène (le livre), même caméra
 
     this.tPrec = performance.now()
@@ -535,6 +536,8 @@ export class Foret {
     const debut = e => {
       // En lecture, le doigt tourne les pages : le regard ne bouge pas.
       if (this.lecture) { down = false; doigt = null; this.inertie = null; return }
+      // Vue fixe : pas de glissé, mais l'appui bref (le « tap ») compte toujours.
+      if (this.statique) { doigt = e.pointerId; down = false; this.inertie = null; this.onInteraction?.(); return }
       // Un seul doigt pilote le regard. Un deuxième doigt (pincement) annule
       // le glissé en cours : mélanger les deux faisait n'importe quoi.
       if (doigt !== null && e.pointerId !== doigt) { down = false; doigt = null; this.inertie = null; return }
@@ -726,8 +729,10 @@ export class Foret {
       yawT = this.yaw0 + this.dragYaw - this.mouseX * 9 * DEG * par
       pitchT = this.dragPitch - this.mouseY * 5 * DEG * par
     }
-    this.yaw = lerpAngle(this.yaw, yawT, this.gyroBrut ? 0.2 : 0.055)
-    this.pitch = lerp(this.pitch, clamp(pitchT, -PITCH_MAX, PITCH_MAX), this.gyroBrut ? 0.2 : 0.055)
+    if (this.poseForcee) { yawT = this.poseForcee.yaw; pitchT = this.poseForcee.pitch }
+    const kReg = this.poseForcee ? 0.06 : (this.gyroBrut ? 0.2 : 0.055)
+    this.yaw = lerpAngle(this.yaw, yawT, kReg)
+    this.pitch = lerp(this.pitch, clamp(pitchT, -PITCH_MAX, PITCH_MAX), kReg)
 
     // Marche : on avance dans la direction du regard, à l'horizontale, avec
     // une allure qui monte et descend en douceur ; balancement de la tête au

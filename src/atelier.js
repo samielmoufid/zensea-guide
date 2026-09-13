@@ -8,7 +8,7 @@
 // reflète dans l'acier et qui éclaire le bois.
 
 import * as THREE from 'three'
-import { creerHandpan, R } from './handpan.js'
+import { creerHandpan, R, H_BAS } from './handpan.js'
 import { TEMPLE_YAW, SUN_DIR } from './foret.js'
 
 const DEG = Math.PI / 180
@@ -44,6 +44,8 @@ export const ATELIER_YAW = TEMPLE_YAW
 const SOL = -1.5
 const TABLE_AV = -0.74, TABLE_AR = -0.42
 const R_AV = 1.8, R_AR = 2.6
+// Le présentoir : la petite table juste devant soi où vient le handpan choisi.
+export const PRESENTOIR = { x: 0, y: -0.78, z: -0.82, pitch: -40 * DEG }
 
 function textureBois(teinte = '#6b4a2e', veines = '#3e2a17', larg = 512, haut = 512, lattes = 6) {
   const cv = document.createElement('canvas'); cv.width = larg; cv.height = haut
@@ -93,6 +95,7 @@ export class Atelier {
     this.scene.add(this.mobilier)
     this._pavillon()
     this._tables()
+    this._presentoir()
     this._handpans()
     this._lanternes()
     this._encens()
@@ -241,6 +244,21 @@ export class Atelier {
     arc(R_AR, 0.74, TABLE_AR, 90 * DEG - 82 * DEG, 90 * DEG + 82 * DEG)
   }
 
+  // ---- Le présentoir --------------------------------------------------------------
+  // Une table ronde, basse, juste devant les genoux : vide à l'arrivée, elle
+  // reçoit le handpan qu'on a choisi, bien à plat, tout entier sous les mains.
+  _presentoir() {
+    const bois = new THREE.MeshStandardMaterial({ map: textureBois('#4a3320', '#2a1a0e', 512, 512, 5), roughness: 0.5, metalness: 0.05 })
+    const P = PRESENTOIR
+    const plateau = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.4, 0.045, 48), bois)
+    plateau.position.set(P.x, P.y - 0.0225, P.z)
+    const pied = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, P.y - SOL - 0.045, 20), bois)
+    pied.position.set(P.x, (P.y - 0.045 + SOL) / 2, P.z)
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.03, 32), bois)
+    base.position.set(P.x, SOL + 0.015, P.z)
+    this.mobilier.add(plateau, pied, base)
+  }
+
   // ---- Les handpans -------------------------------------------------------------
   _handpans() {
     const opts = { loader: this.loader, base: this.base + 'atelier/handpans/', mobile: this.mobile, aniso: this.aniso }
@@ -248,10 +266,10 @@ export class Atelier {
     // Sept devant, neuf derrière ; chacun tourné vers le centre et incliné vers nous.
     const poser = (g, rayon, angDeg, y) => {
       const a = angDeg * DEG
-      g.position.set(Math.cos(a) * rayon, y + 0.075, -Math.sin(a) * rayon)
+      g.position.set(Math.cos(a) * rayon, y + H_BAS, -Math.sin(a) * rayon)
       // Repère : face au visiteur (le "haut" de la photo vers l'extérieur), inclinaison 12° vers le centre.
       g.rotation.set(0, a - Math.PI / 2, 0)
-      g.rotateX(12 * DEG)
+      g.rotateX(6 * DEG)
       g.userData.repos.copy(g.position); g.userData.reposQ.copy(g.quaternion)
     }
     for (let i = 0; i < 7; i++) poser(this.handpans[i], R_AV, 90 + 63 - i * 21, TABLE_AV)
@@ -388,15 +406,16 @@ export class Atelier {
     for (const g of this.handpans) {
       const u = g.userData
       const estChoisi = this.choisi === g
-      const cible = estChoisi ? new THREE.Vector3(0, -0.46 - this.assis * 0.05, -0.66) : u.repos
+      // Choisi : posé à plat sur le présentoir (le fond de la coque sur le bois).
+      const cible = estChoisi ? new THREE.Vector3(PRESENTOIR.x, PRESENTOIR.y + H_BAS, PRESENTOIR.z) : u.repos
       g.position.lerp(cible, 0.07)
-      const q = estChoisi ? new THREE.Quaternion().setFromEuler(new THREE.Euler(30 * DEG, 0, 0)) : u.reposQ
+      const q = estChoisi ? new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, 0)) : u.reposQ
       g.quaternion.slerp(q, 0.07)
-      const s = estChoisi ? 1.15 : 1
+      const s = 1
       g.scale.setScalar(lerp(g.scale.x, s, 0.07))
       const survole = this.survol === g && !this.choisi
       u.coque.material.emissive.setHex(survole ? 0x2a1e10 : 0x000000)
-      u.ombre.visible = !estChoisi
+      u.ombre.visible = true
       if (u.halo.visible) {
         u.halo.material.opacity *= 0.9; u.halo.scale.multiplyScalar(1.03)
         if (u.halo.material.opacity < 0.02) u.halo.visible = false
