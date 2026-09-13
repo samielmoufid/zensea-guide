@@ -245,6 +245,7 @@ function entrerAtelier() {
       // tout l'instrument est sous les mains sans tourner la tête.
       foret.statique = true
       foret.poseForcee = { yaw: ATELIER_YAW, pitch: PRESENTOIR.pitch }
+      ambiance.sourdine(true)
       murmure.textContent = ''
       // La première note, offerte : c'est sa voix.
       setTimeout(() => ambiance.noteProche(r.modele.notes[0], 0.7, 0), 900)
@@ -255,6 +256,7 @@ function entrerAtelier() {
   // On repose le handpan : il retourne sur sa table, le regard redevient libre.
 function reposerHandpan() {
   if (atelier) atelier.choisi = null
+  ambiance.sourdine(false)
   carte.hidden = true; reposer.hidden = true
   hud.classList.remove('is-choisi')
   murmure.textContent = ''

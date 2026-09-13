@@ -266,6 +266,16 @@ export class Ambiance {
     this._boucle()
   }
 
+  // Sourdine : quand on joue, la forêt s'éloigne un peu (oiseaux, vent,
+  // handpan lointain), les notes sous les mains passent à côté, intactes.
+  sourdine(on) {
+    if (!this.ctx || !this.running) return
+    const t = this.ctx.currentTime
+    this.master.gain.cancelScheduledValues(t)
+    this.master.gain.setValueAtTime(Math.max(0.0001, this.master.gain.value), t)
+    this.master.gain.setTargetAtTime(on ? 0.45 : 1, t, 0.8)
+  }
+
   // Coupe en douceur sans détruire le graphe : on peut relancer.
   stop(fadeOut = 1.2) {
     if (!this.ctx) return
