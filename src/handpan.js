@@ -58,16 +58,22 @@ function calotte(haut) {
  */
 export function creerHandpan(m, { loader, base, mobile, aniso }) {
   const g = new THREE.Group()
+  // Acier nitruré : mat, brossé (reflets étirés), la photo donne la couleur ;
+  // le relief (ding bombé, champs en creux, martelage) vient d'une carte de
+  // normales construite d'après la position des champs sur la photo.
   const acier = new THREE.MeshPhysicalMaterial({
-    color: 0xffffff, metalness: m.metal ?? 0.55, roughness: m.rough ?? 0.34,
-    clearcoat: 0.12, clearcoatRoughness: 0.4, envMapIntensity: 0.9, normalScale: new THREE.Vector2(0.7, 0.7)
+    color: 0xffffff, metalness: m.metal ?? 0.78, roughness: (m.rough ?? 0.34) + 0.1,
+    clearcoat: 0, envMapIntensity: 0.75, normalScale: new THREE.Vector2(0.5, 0.5),
+    anisotropy: 0.45, anisotropyRotation: Math.PI / 2
   })
   const coque = new THREE.Mesh(calotte(true), acier)
+  coque.castShadow = true; coque.receiveShadow = true
   g.add(coque)
   // La coque du dessous : le même acier, sans champs de notes. Sa teinte est
   // prise sur la photo (le bord du disque) dès que celle-ci est chargée.
   const acierBas = new THREE.MeshPhysicalMaterial({ color: 0x8a8a8c, metalness: 0.92, roughness: (m.rough ?? 0.34) + 0.08, clearcoat: 0.1, envMapIntensity: 0.9 })
   const dessous = new THREE.Mesh(calotte(false), acierBas)
+  dessous.castShadow = true
   g.add(dessous)
 
   // Rebord : corde tressée ou joint noir.
@@ -78,6 +84,7 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
       : new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.7, metalness: 0.05 })
   )
   rebord.rotation.x = Math.PI / 2
+  rebord.castShadow = true
   g.add(rebord)
 
   // Champs de notes (invisibles) : là où le doigt frappe. Disposition
@@ -94,6 +101,18 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
   }
   poser(0, 0, 0.07, m.notes[0], 0)
   for (let k = 0; k < 8; k++) poser(R * 0.63, k * Math.PI / 4 - Math.PI / 2, 0.05, m.notes[k + 1] ?? m.notes[0] * 2, k + 1)
+  // Les vrais champs, mesurés sur la photo (rayon unitaire, y vers le bas de l'image).
+  const placerChamps = (d) => {
+    if (!d?.champs?.length) return
+    for (const c of champs.splice(0)) g.remove(c)
+    poser(0, 0, R * (d.rayonDing ?? 0.17) * 0.95, m.notes[0], 0)
+    // Dans le sens horaire en partant du bas (le champ le plus près du joueur = la note la plus grave).
+    const ordre = d.champs.map(([x, y]) => ({ x, y, a: Math.atan2(y, x) })).sort((p, q) => ((p.a - Math.PI / 2 + 4 * Math.PI) % (2 * Math.PI)) - ((q.a - Math.PI / 2 + 4 * Math.PI) % (2 * Math.PI)))
+    ordre.forEach((c, k) => {
+      const r = Math.hypot(c.x, c.y) * R, ang = Math.atan2(c.y, c.x)
+      poser(r, ang, R * (d.rayonChamp ?? 0.095) * 1.15, m.notes[k + 1] ?? m.notes[0] * Math.pow(2, (k + 1) / 8), k + 1)
+    })
+  }
 
   // Halo de frappe : un anneau qui s'allume sur le champ touché.
   const halo = new THREE.Mesh(new THREE.RingGeometry(0.03, 0.06, 32), new THREE.MeshBasicMaterial({ color: 0xffe9b8, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }))
@@ -138,6 +157,6 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
     }, undefined, () => { acier.color.setHex(m.couleur ?? 0x555a60); acier.metalness = 0.9; res(false) })
   })
 
-  g.userData = { modele: m, champs, coque, ombre, halo, charger, repos: new THREE.Vector3(), reposQ: new THREE.Quaternion(), reposS: 1 }
+  g.userData = { modele: m, champs, coque, ombre, halo, charger, placerChamps, repos: new THREE.Vector3(), reposQ: new THREE.Quaternion(), reposS: 1 }
   return g
 }

@@ -118,8 +118,15 @@ export class Atelier {
     this.panoMat.map = tex; this.panoMat.color.set(0xffffff); this.panoMat.needsUpdate = true
     this.scene.environment = environment
     this.pret = true
-    // Les photos des handpans, une à une.
-    ;(async () => { for (const g of this.handpans) await g.userData.charger() })()
+    // Les photos des handpans, une à une ; puis la position réelle des champs.
+    ;(async () => {
+      for (const g of this.handpans) await g.userData.charger()
+      try {
+        const d = await (await fetch(this.base + 'atelier/handpans/champs.json')).json()
+        for (const g of this.handpans) g.userData.placerChamps(d[g.userData.modele.id])
+        this.cibles = this.handpans.flatMap(g => [g.userData.coque, ...g.userData.champs])
+      } catch (e) { console.warn('champs.json', e) }
+    })()
   }
 
   charger(url) {
@@ -141,7 +148,15 @@ export class Atelier {
     // Le soleil entre par le côté ouvert ; le ciel et le sol de la forêt font le reste.
     this.soleil = new THREE.DirectionalLight(0xffe2bc, 1.0)
     this.soleil.position.copy(SUN_DIR).multiplyScalar(12)
-    this.scene.add(this.soleil)
+    // Ombres douces des instruments sur les tables.
+    this.soleil.castShadow = true
+    this.soleil.shadow.mapSize.set(this.mobile ? 1024 : 2048, this.mobile ? 1024 : 2048)
+    const sc = this.soleil.shadow.camera
+    sc.left = -4; sc.right = 4; sc.top = 4; sc.bottom = -4; sc.near = 2; sc.far = 30
+    this.soleil.shadow.bias = -0.0005; this.soleil.shadow.normalBias = 0.01; this.soleil.shadow.radius = 4
+    this.renderer.shadowMap.enabled = true
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+    this.scene.add(this.soleil, this.soleil.target)
     this.scene.add(new THREE.HemisphereLight(0xe6f0e4, 0x4a3a26, 0.55))
   }
 
@@ -155,7 +170,7 @@ export class Atelier {
 
     // Plancher : un disque de lattes, avec une marche basse tout autour.
     const sol = new THREE.Mesh(new THREE.CircleGeometry(RP + 0.6, 64), new THREE.MeshStandardMaterial({ map: boisSol, roughness: 0.62, metalness: 0.03 }))
-    sol.rotation.x = -Math.PI / 2; sol.position.y = SOL
+    sol.rotation.x = -Math.PI / 2; sol.position.y = SOL; sol.receiveShadow = true
     this.mobilier.add(sol)
     const marche = new THREE.Mesh(new THREE.CylinderGeometry(RP + 0.6, RP + 0.75, 0.16, 64, 1, true), boisSombre)
     marche.position.y = SOL - 0.08
@@ -228,6 +243,7 @@ export class Atelier {
       forme.absarc(0, 0, rayon - largeur / 2, a1, a0, true)
       const geo = new THREE.ExtrudeGeometry(forme, { depth: 0.05, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 2, curveSegments: 64 })
       const m = new THREE.Mesh(geo, bois)
+      m.receiveShadow = true
       // La forme est dessinée dans le plan (x, -z) : devant = -z. L'épaisseur
       // s'extrude vers le haut, le dessus du plateau est à y.
       m.rotation.x = -Math.PI / 2; m.position.y = y - 0.05
@@ -254,6 +270,7 @@ export class Atelier {
     const bois = new THREE.MeshStandardMaterial({ map: textureBois('#4a3320', '#2a1a0e', 512, 512, 5), roughness: 0.5, metalness: 0.05 })
     const P = PRESENTOIR
     const plateau = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.4, 0.045, 48), bois)
+    plateau.receiveShadow = true
     plateau.position.set(P.x, P.y - 0.0225, P.z)
     const pied = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.12, P.y - SOL - 0.045, 20), bois)
     pied.position.set(P.x, (P.y - 0.045 + SOL) / 2, P.z)
