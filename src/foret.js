@@ -766,10 +766,12 @@ export class Foret {
     }
     if (this.autre) {
       // Dans l'atelier : pas de marche, on est debout puis assis.
-      this.autre.assis = lerp(this.autre.assis, this.autre.choisi ? 1 : 0, 0.03)
+      // La caméra ne descend plus quand on choisit : la vue fixe sur le
+      // présentoir est calculée pour un œil à hauteur constante.
+      this.autre.assis = 0
       // À l'arrivée, le regard est posé sur les tables, champ serré, puis il
       // se relève et s'ouvre : c'est l'entrée dans le temple.
-      this.camera.position.set(0, -0.35 * this.autre.assis, 0)
+      this.camera.position.set(0, 0, 0)
       // En vue fixe (handpan sur le présentoir), plus aucune respiration : le
       // cadre est exactement le même pour tout le monde, et il ne bouge pas.
       const fixe = !!this.poseForcee

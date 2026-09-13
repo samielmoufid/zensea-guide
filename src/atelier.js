@@ -45,10 +45,10 @@ const SOL = -1.5
 const TABLE_AV = -0.74, TABLE_AR = -0.42
 const R_AV = 1.8, R_AR = 2.6
 // Le présentoir : la petite table juste devant soi où vient le handpan choisi.
-// Vu de haut : la caméra plonge à 52°, le présentoir est plus bas encore
-// (64° sous l'horizon, à 87 cm), pour que l'instrument entier tienne dans
-// le bas de l'écran, du centre jusqu'aux genoux.
-export const PRESENTOIR = { x: 0, y: -0.9, z: -0.38, pitch: -52 * DEG }
+// Œil à y = 0, plongée à 52° ; l'instrument est à 1,17 m, 58° sous
+// l'horizon : il apparaît entier, centré, aux deux tiers de la largeur, un
+// peu sous le milieu de l'écran, le présentoir visible autour.
+export const PRESENTOIR = { x: 0, y: -1.105, z: -0.62, pitch: -52 * DEG }
 
 function textureBois(teinte = '#6b4a2e', veines = '#3e2a17', larg = 512, haut = 512, lattes = 6) {
   const cv = document.createElement('canvas'); cv.width = larg; cv.height = haut
@@ -381,13 +381,26 @@ export class Atelier {
   // Un appui : sur un handpan non choisi → on le choisit ; sur un champ du
   // handpan choisi → on joue la note ; ailleurs → on le repose.
   toucher(camera, nx, ny) {
-    const obj = this.viser(camera, nx, ny)
+    let obj = this.viser(camera, nx, ny)
     if (!obj) {
       if (this.choisi) { this.choisi = null; return { type: 'repose' } }
       return null
     }
     const g = obj.userData.handpan || obj.parent
     if (this.choisi !== g) { this.choisir(g); return { type: 'choix', modele: g.userData.modele } }
+    if (!obj.userData.note) {
+      // Le doigt est sur la coque : le champ le plus proche du point touché.
+      const hit = this.ray.intersectObject(g.userData.coque, false)[0]
+      if (hit) {
+        const loc = g.worldToLocal(hit.point.clone())
+        let best = null, dmin = Infinity
+        for (const c of g.userData.champs) {
+          const d = Math.hypot(c.position.x - loc.x, c.position.z - loc.z)
+          if (d < dmin) { dmin = d; best = c }
+        }
+        if (best && dmin < R * 0.2) obj = best
+      }
+    }
     if (obj.userData.note) {
       const pan = obj.position.x * 2
       this.onNote?.(obj.userData.note, 0.9, pan)
