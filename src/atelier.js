@@ -45,7 +45,7 @@ export const MODELES = [
   { id: '119', nom: 'Mandala doré', sous: 'Un mandala fin gravé autour du ding, sur un doré clair.', rough: 0.3, n: 10 },
   { id: '121', nom: 'Mandala argenté', sous: 'Un argent clair, mandala au centre, corde tressée au rebord.', rough: 0.3, corde: true, n: 9 },
   // 17 notes : neuf dessus (ré Kurd), huit dessous (ré Gong). On le retourne pour jouer le dessous.
-  { id: '125', nom: 'Doré grande gamme · 17 notes', sous: 'Neuf notes dessus en ré Kurd, huit dessous en ré Gong : on le retourne pour changer de gamme.', rough: 0.32, corde: true, n: 9, dessous: 8, notesBas: GONG, gamme: '17 notes · dessus ré Kurd, dessous ré Gong' },
+  { id: '125', nom: 'Doré · 17 notes', sous: 'Neuf notes dessus en ré Kurd, huit dessous en ré Gong : on le retourne pour changer de gamme.', rough: 0.32, corde: true, n: 9, dessous: 8, notesBas: GONG, gamme: '17 notes · dessus ré Kurd, dessous ré Gong' },
   { id: '1026', nom: 'Blanc', sous: 'Un blanc mat, le seul de la maison, avec un joint noir au rebord.', rough: 0.62, metal: 0.12, n: 9 }
 ].map(m => ({ ...m, notes: kurd(m.n), gamme: m.gamme ?? GAMME(m.n) }))
 
