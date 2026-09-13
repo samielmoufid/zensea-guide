@@ -14,28 +14,38 @@ import { TEMPLE_YAW, SUN_DIR } from './foret.js'
 const DEG = Math.PI / 180
 const lerp = (a, b, k) => a + (b - a) * k
 
-// Ré mineur Kurd, la gamme la plus répandue : ding puis les champs.
-const KURD = [146.83, 220.0, 233.08, 261.63, 293.66, 329.63, 349.23, 392.0, 440.0]
+// Les notes, en hertz (la = 440). Ré mineur Kurd, la gamme de la maison :
+// ding ré3, puis la couronne la3 si♭3 do4 ré4 mi4 fa4 sol4 la4 (do5 ré5 sur
+// les grandes gammes). Le nombre de champs de chaque modèle est celui qu'on
+// compte sur sa photo ; la disposition suit le zigzag classique, la note la
+// plus grave devant soi, puis en montant à gauche, à droite, jusqu'en haut.
+const N = { re3: 146.83, la3: 220.0, sib3: 233.08, do4: 261.63, re4: 293.66, mi4: 329.63, fa4: 349.23, sol4: 392.0, la4: 440.0, do5: 523.25, re5: 587.33 }
+const KURD = [N.re3, N.la3, N.sib3, N.do4, N.re4, N.mi4, N.fa4, N.sol4, N.la4, N.do5, N.re5]
+// n notes au total (ding compris) → ding + les n−1 premiers champs.
+const kurd = n => KURD.slice(0, n)
+const GAMME = n => `Ré mineur Kurd · ${n} notes`
 
 // Les seize handpans actifs de la maison (fiches Shopify 101 → 125).
 export const MODELES = [
-  { id: '101', nom: 'Noir mat', sous: 'Sans reflet, sans artifice. L’acier nitruré laisse toute la place au son.', rough: 0.5, metal: 0.45 },
-  { id: '102', nom: 'Bleu nuit', sous: 'Presque noir sous une lumière faible, il se révèle dès qu’on l’approche d’une fenêtre.', rough: 0.32 },
-  { id: '103', nom: 'Doré', sous: 'Le doré chaud du nitrurage, obtenu par la température et non par une peinture.', rough: 0.3 },
-  { id: '104', nom: 'Argenté', sous: 'Une finition sobre, qui laisse voir le relief du martelage sans le maquiller.', rough: 0.28 },
-  { id: '105', nom: 'Bronze', sous: 'Un bronze mat aux reflets cuivrés, le plus proche des premiers handpans suisses.', rough: 0.36 },
-  { id: '106', nom: 'Vortex noir', sous: 'Une spirale gravée autour du ding, qui tourne avec le regard.', rough: 0.26 },
-  { id: '108', nom: 'Motif bleu', sous: 'Un motif gravé sur fond bleu, dessiné autour des champs de notes.', rough: 0.34 },
-  { id: '109', nom: 'Cosmos', sous: 'Des reflets qui passent du violet au vert selon l’angle. À la chaleur, pas au vernis.', rough: 0.22 },
-  { id: '110', nom: 'Violet profond', sous: 'Un violet sombre, très saturé, qui vire au prune sous une lampe chaude.', rough: 0.3 },
-  { id: '112', nom: 'Mandala', sous: 'Un mandala gravé sur toute la coque, qui suit les cercles du martelage.', rough: 0.38, metal: 0.45 },
-  { id: '114', nom: 'Argenté brossé', sous: 'Un acier brossé aux champs cuivrés, corde tressée au rebord.', rough: 0.4, corde: true },
-  { id: '115', nom: 'Spirale noire', sous: 'Des cercles concentriques sur un acier bleu-noir, comme des ondes.', rough: 0.24 },
-  { id: '117', nom: 'Spirale or clair', sous: 'Un or pâle, presque champagne, et des champs à peine creusés.', rough: 0.3 },
-  { id: '119', nom: 'Mandala doré', sous: 'Un mandala fin gravé autour du ding, sur un doré clair.', rough: 0.3 },
-  { id: '121', nom: 'Mandala argenté', sous: 'Un argent clair, mandala au centre, corde tressée au rebord.', rough: 0.3, corde: true },
-  { id: '125', nom: 'Doré grande gamme · 17 notes', sous: 'Deux étages de notes : une couronne étendue et des graves sous la coque.', rough: 0.32, corde: true }
-].map(m => ({ ...m, notes: KURD }))
+  { id: '101', nom: 'Noir mat', sous: 'Sans reflet, sans artifice. L’acier nitruré laisse toute la place au son.', rough: 0.5, metal: 0.45, n: 9 },
+  { id: '102', nom: 'Bleu nuit', sous: 'Presque noir sous une lumière faible, il se révèle dès qu’on l’approche d’une fenêtre.', rough: 0.32, n: 9 },
+  { id: '103', nom: 'Doré', sous: 'Le doré chaud du nitrurage, obtenu par la température et non par une peinture.', rough: 0.3, n: 9 },
+  { id: '104', nom: 'Argenté', sous: 'Une finition sobre, qui laisse voir le relief du martelage sans le maquiller.', rough: 0.28, n: 9 },
+  { id: '105', nom: 'Bronze', sous: 'Un bronze mat aux reflets cuivrés, le plus proche des premiers handpans suisses.', rough: 0.36, n: 9 },
+  { id: '106', nom: 'Vortex noir', sous: 'Une spirale gravée autour du ding, qui tourne avec le regard.', rough: 0.26, n: 9 },
+  { id: '108', nom: 'Motif bleu', sous: 'Un motif gravé sur fond bleu, dessiné autour des champs de notes.', rough: 0.34, n: 9 },
+  { id: '109', nom: 'Cosmos', sous: 'Des reflets qui passent du violet au vert selon l’angle. À la chaleur, pas au vernis.', rough: 0.22, n: 8 },
+  { id: '110', nom: 'Violet profond', sous: 'Un violet sombre, très saturé, qui vire au prune sous une lampe chaude.', rough: 0.3, n: 9 },
+  { id: '112', nom: 'Mandala', sous: 'Un mandala gravé sur toute la coque, qui suit les cercles du martelage.', rough: 0.38, metal: 0.45, n: 9 },
+  { id: '114', nom: 'Argenté brossé', sous: 'Un acier brossé aux champs cuivrés, corde tressée au rebord.', rough: 0.4, corde: true, n: 10 },
+  { id: '115', nom: 'Spirale noire', sous: 'Des cercles concentriques sur un acier bleu-noir, comme des ondes.', rough: 0.24, n: 7 },
+  { id: '117', nom: 'Spirale or clair', sous: 'Un or pâle, presque champagne, et des champs à peine creusés.', rough: 0.3, n: 9 },
+  { id: '119', nom: 'Mandala doré', sous: 'Un mandala fin gravé autour du ding, sur un doré clair.', rough: 0.3, n: 10 },
+  { id: '121', nom: 'Mandala argenté', sous: 'Un argent clair, mandala au centre, corde tressée au rebord.', rough: 0.3, corde: true, n: 9 },
+  // 17 notes : la couronne du dessus (celle qu'on joue ici) plus des graves et
+  // des aigus sous la coque, hors de portée dans cette vue.
+  { id: '125', nom: 'Doré grande gamme · 17 notes', sous: 'Deux étages de notes : une couronne étendue et des graves sous la coque.', rough: 0.32, corde: true, n: 9, gamme: 'Ré mineur Kurd · 17 notes' }
+].map(m => ({ ...m, notes: kurd(m.n), gamme: m.gamme ?? GAMME(m.n) }))
 
 // Vue d'ouverture : face aux tables, la forêt et le sentier derrière.
 export const ATELIER_YAW = TEMPLE_YAW

@@ -122,11 +122,20 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
     for (const c of champs.splice(0)) g.remove(c)
     for (const mk of marqueurs.splice(0)) g.remove(mk)
     poser(0, 0, R * (d.rayonDing ?? 0.17) * 0.95, m.notes[0], 0)
-    // Dans le sens horaire en partant du bas (le champ le plus près du joueur = la note la plus grave).
-    const ordre = d.champs.map(([x, y]) => ({ x, y, a: Math.atan2(y, x) })).sort((p, q) => ((p.a - Math.PI / 2 + 4 * Math.PI) % (2 * Math.PI)) - ((q.a - Math.PI / 2 + 4 * Math.PI) % (2 * Math.PI)))
+    // Zigzag classique : la note la plus grave devant le joueur (bas de la
+    // photo), puis en montant, à gauche, à droite, à gauche… jusqu'en haut.
+    // a = 0 devant, négatif à gauche, ±π tout en haut.
+    const pts = d.champs.map(([x, y]) => ({ x, y, a: Math.atan2(x, y) })).sort((p, q) => Math.abs(p.a) - Math.abs(q.a))
+    const ordre = []
+    for (let i = 0; i < pts.length;) {
+      const p = pts[i], q = pts[i + 1]
+      // Deux champs à la même hauteur, de part et d'autre : la gauche d'abord.
+      if (q && p.a * q.a < 0 && Math.abs(Math.abs(q.a) - Math.abs(p.a)) < 0.6) { ordre.push(p.a < q.a ? p : q, p.a < q.a ? q : p); i += 2 }
+      else { ordre.push(p); i++ }
+    }
     ordre.forEach((c, k) => {
       const r = Math.hypot(c.x, c.y) * R, ang = Math.atan2(c.y, c.x)
-      poser(r, ang, R * (d.rayonChamp ?? 0.095) * 1.15, m.notes[k + 1] ?? m.notes[0] * Math.pow(2, (k + 1) / 8), k + 1)
+      poser(r, ang, R * (d.rayonChamp ?? 0.095) * 1.15, m.notes[k + 1] ?? m.notes[m.notes.length - 1] * 1.5, k + 1)
     })
   }
 

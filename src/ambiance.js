@@ -452,19 +452,33 @@ export class Ambiance {
     const sortie = p || c.createGain()
     if (p) p.pan.value = Math.max(-0.7, Math.min(0.7, pan))
     sortie.connect(this.proche)
-    for (const [ratio, g, dur] of [[1, 1, 4.2], [2, 0.5, 2.8], [3, 0.24, 1.8], [4.9, 0.06, 0.7], [6.2, 0.03, 0.4]]) {
-      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f * ratio
+    // La voix d'un champ de handpan : la fondamentale, son octave et sa
+    // douzième, accordées ensemble par le facteur (c'est ce qui fait le son),
+    // deux partiels hauts non harmoniques qui s'éteignent vite (l'éclat de
+    // l'acier), et la fondamentale doublée, à peine désaccordée, pour le
+    // battement lent d'une vraie note. Les graves tiennent plus longtemps.
+    const grave = Math.max(0, Math.min(1, (330 - f) / 200))
+    const tenue = 2.8 + grave * 2.6
+    const partiels = [[1, 0.7, tenue, 0.35], [1, 0.45, tenue * 0.92, -0.35], [2, 0.46, tenue * 0.6, 0], [3, 0.22, tenue * 0.4, 0], [4.24, 0.05, 0.45, 0], [5.8, 0.028, 0.25, 0]]
+    for (const [ratio, g, dur, det] of partiels) {
+      const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f * ratio + det
       const e = c.createGain()
       e.gain.setValueAtTime(0.0001, t)
-      e.gain.exponentialRampToValueAtTime(0.28 * g * vel, t + 0.005 + 0.003 * ratio)
+      e.gain.exponentialRampToValueAtTime(0.25 * g * vel, t + 0.004 + 0.003 * ratio)
       e.gain.exponentialRampToValueAtTime(0.0001, t + dur * (0.7 + 0.3 * vel))
       o.connect(e).connect(sortie); o.start(t); o.stop(t + dur + 0.1)
     }
+    // Le choc : le doigt sur l'acier (bref, clair) et le corps de la coque (sourd).
     const n = this._sourceBruit()
     const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f * 2.4; bp.Q.value = 1.5
     const e = c.createGain()
-    e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(0.09 * vel, t + 0.003); e.gain.exponentialRampToValueAtTime(0.0001, t + 0.06)
+    e.gain.setValueAtTime(0.0001, t); e.gain.exponentialRampToValueAtTime(0.08 * vel, t + 0.003); e.gain.exponentialRampToValueAtTime(0.0001, t + 0.05)
     n.connect(bp).connect(e).connect(sortie); n.start(t); n.stop(t + 0.1)
+    const n2 = this._sourceBruit()
+    const lp = c.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 160; lp.Q.value = 0.7
+    const e2 = c.createGain()
+    e2.gain.setValueAtTime(0.0001, t); e2.gain.exponentialRampToValueAtTime(0.12 * vel, t + 0.005); e2.gain.exponentialRampToValueAtTime(0.0001, t + 0.09)
+    n2.connect(lp).connect(e2).connect(sortie); n2.start(t); n2.stop(t + 0.15)
   }
 
   // Distance (unités de la scène) et angle (radians, négatif = à gauche) de la

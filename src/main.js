@@ -208,9 +208,13 @@ async function entrer(avecSon) {
     ? 'Inclinez le téléphone ou glissez pour regarder · double appui pour recentrer'
     : 'Glissez pour regarder autour de vous'
   await attendre(1200)
-  murmure.textContent = 'Seize handpans. Touchez celui qui vous appelle.'
-  await attendre(3300)
-  hud.classList.add('is-settled')
+  // Venu d'une fiche produit : ce handpan-là vient tout de suite sur les genoux.
+  if (choisirDepuisLien()) { hud.classList.add('is-settled') }
+  else {
+    murmure.textContent = 'Seize handpans. Touchez celui qui vous appelle.'
+    await attendre(3300)
+    hud.classList.add('is-settled')
+  }
   if (ambiance.running) ambiance.handpanLointain(), ambiance.setMusique(30, -0.9)
 }
 
@@ -237,22 +241,44 @@ function entrerAtelier() {
   foret.onTap = (nx, ny) => {
     if (livre?.ouvert) return
     const r = atelier.toucher(foret.camera, nx, ny)
-    if (r?.type === 'choix') {
-      carteNom.textContent = r.modele.nom; carteSous.textContent = r.modele.sous
-      carte.hidden = false; guide.hidden = false; reposer.hidden = false
-      hud.classList.add('is-choisi')
-      // Vue fixe : le regard se pose sur le présentoir et n'en bouge plus,
-      // tout l'instrument est sous les mains sans tourner la tête.
-      foret.statique = true
-      foret.poseForcee = { yaw: ATELIER_YAW, pitch: PRESENTOIR.pitch }
-      ambiance.sourdine(true)
-      murmure.textContent = ''
-      // La première note, offerte : c'est sa voix.
-      setTimeout(() => ambiance.noteProche(r.modele.notes[0], 0.7, 0), 900)
-    } else if (r?.type === 'repose') {
-      reposerHandpan()
-    }
+    if (r?.type === 'choix') surChoix(r.modele)
+    else if (r?.type === 'repose') reposerHandpan()
   }
+  // Survol à la souris : le handpan s'éclaire.
+  window.addEventListener('pointermove', e => {
+    if (atelier.choisi || livre?.ouvert) return
+    const obj = atelier.viser(foret.camera, (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1)
+    atelier.survol = obj ? (obj.userData.handpan || obj.parent) : null
+    document.body.style.cursor = obj ? 'pointer' : ''
+  }, { passive: true })
+}
+
+// Un handpan vient d'être choisi (du doigt, ou par le lien d'une fiche produit).
+function surChoix(modele) {
+  carteNom.textContent = modele.nom; carteSous.textContent = `${modele.gamme} · ${modele.sous}`
+  carte.hidden = false; guide.hidden = false; reposer.hidden = false
+  hud.classList.add('is-choisi')
+  // Vue fixe : le regard se pose sur le présentoir et n'en bouge plus,
+  // tout l'instrument est sous les mains sans tourner la tête.
+  foret.statique = true
+  foret.poseForcee = { yaw: ATELIER_YAW, pitch: PRESENTOIR.pitch }
+  ambiance.sourdine(true)
+  murmure.textContent = ''
+  // La première note, offerte : c'est sa voix.
+  setTimeout(() => ambiance.noteProche(modele.notes[0], 0.7, 0), 900)
+}
+
+// Depuis une fiche produit (guide.zensea.fr/?handpan=103) : ce handpan-là
+// vient directement sur les genoux, sans avoir à le chercher sur les tables.
+function choisirDepuisLien() {
+  const id = params.get('handpan')
+  if (!id || !atelier) return false
+  const g = atelier.handpans.find(h => h.userData.modele.id === id)
+  if (!g) return false
+  atelier.choisir(g)
+  surChoix(g.userData.modele)
+  return true
+}
   // On repose le handpan : il retourne sur sa table, le regard redevient libre.
 function reposerHandpan() {
   if (atelier) atelier.choisi = null
@@ -268,15 +294,6 @@ function reposerHandpan() {
   }
 }
 reposer.addEventListener('click', reposerHandpan)
-
-// Survol à la souris : le handpan s'éclaire.
-  window.addEventListener('pointermove', e => {
-    if (atelier.choisi || livre?.ouvert) return
-    const obj = atelier.viser(foret.camera, (e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1)
-    atelier.survol = obj ? (obj.userData.handpan || obj.parent) : null
-    document.body.style.cursor = obj ? 'pointer' : ''
-  }, { passive: true })
-}
 
 // Le déverrouillage audio se fait ici, dans le clic, avant toute attente.
 btnSon.addEventListener('click', () => { ambiance.unlock(); entrer(true) })
