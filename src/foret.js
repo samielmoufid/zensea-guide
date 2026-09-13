@@ -770,8 +770,11 @@ export class Foret {
       // À l'arrivée, le regard est posé sur les tables, champ serré, puis il
       // se relève et s'ouvre : c'est l'entrée dans le temple.
       this.camera.position.set(0, -0.35 * this.autre.assis, 0)
-      this.camera.rotation.set(this.pitch + respire * 0.5 + lerp(-16 * DEG, 0, ease), this.yaw, lerp(2 * DEG, 0, ease), 'YXZ')
-      const f2 = lerp(40, this.fovBase - 6, ease) + fovResp
+      // En vue fixe (handpan sur le présentoir), plus aucune respiration : le
+      // cadre est exactement le même pour tout le monde, et il ne bouge pas.
+      const fixe = !!this.poseForcee
+      this.camera.rotation.set(this.pitch + (fixe ? 0 : respire * 0.5) + lerp(-16 * DEG, 0, ease), this.yaw, lerp(2 * DEG, 0, ease), 'YXZ')
+      const f2 = lerp(40, this.fovBase - 6, ease) + (fixe ? 0 : fovResp)
       if (Math.abs(this.camera.fov - f2) > 0.01) { this.camera.fov = f2; this.camera.updateProjectionMatrix() }
       this.autre.rendu(this.camera, dt)
       this.renderer.render(this.autre.scene, this.camera)
