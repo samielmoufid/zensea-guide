@@ -398,13 +398,12 @@ export class Atelier {
   }
 
   // Un appui : sur un handpan non choisi → on le choisit ; sur un champ du
-  // handpan choisi → on joue la note ; ailleurs → on le repose.
+  // handpan choisi → on joue la note ; à côté (le sol, l'air, la table) → rien :
+  // on ne repose l'instrument que par le bouton, un doigt qui rate une note
+  // ne doit pas le renvoyer sur sa table.
   toucher(camera, nx, ny) {
     let obj = this.viser(camera, nx, ny)
-    if (!obj) {
-      if (this.choisi) { this.choisi = null; return { type: 'repose' } }
-      return null
-    }
+    if (!obj) return null
     const g = obj.userData.handpan || obj.parent
     if (this.choisi !== g) { this.choisir(g); return { type: 'choix', modele: g.userData.modele } }
     if (!obj.userData.note) {

@@ -7,8 +7,15 @@
 import * as THREE from 'three'
 
 export const R = 0.27          // rayon (Ø 54 cm)
-export const H_HAUT = 0.09     // hauteur de la calotte supérieure
-export const H_BAS = 0.115     // profondeur de la coque inférieure (une vraie lentille, pas une assiette)
+export const H_HAUT = 0.095    // hauteur de la calotte supérieure
+export const H_BAS = 0.135     // profondeur de la coque inférieure : d'après les photos de profil,
+                               // une vraie lentille (23 cm de haut en tout), pas une assiette
+
+// Profils : le dessus est un dôme aplati (champs de notes) qui tombe raide
+// au rebord ; le dessous est un bol régulier, paraboloïde, qui rejoint le
+// rebord en biais comme sur les photos.
+export const hauteur = r => H_HAUT * Math.pow(Math.max(0, 1 - Math.pow(r / R, 2.3)), 0.62)
+export const profondeur = r => H_BAS * Math.max(0, 1 - Math.pow(r / R, 2))
 
 let ropeTex = null
 function textureCorde() {
@@ -35,8 +42,7 @@ function calotte(haut) {
   const N = 40, pts = []
   for (let k = 0; k <= N; k++) {
     const r = haut ? R * (1 - k / N) : (k / N) * R
-    const y = H_HAUT * Math.pow(Math.max(0, 1 - Math.pow(r / R, 2.3)), 0.62)
-    pts.push(new THREE.Vector2(r, haut ? y : -y * (H_BAS / H_HAUT)))
+    pts.push(new THREE.Vector2(r, haut ? hauteur(r) : -profondeur(r)))
   }
   // LatheGeometry tourne autour de Y ; le profil part du centre (r = 0).
   const geo = new THREE.LatheGeometry(pts, 96)
@@ -92,16 +98,17 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
   // générique en attendant les notes réelles : ding au centre, huit autour.
   const champs = [], marqueurs = []
   const cible = new THREE.MeshBasicMaterial({ visible: false })
-  // Hauteur et normale de la calotte au rayon r (pour poser les marqueurs à plat sur l'acier).
-  const hauteur = r => H_HAUT * Math.pow(Math.max(0, 1 - Math.pow(r / R, 2.3)), 0.62)
-  const normale = (r, ang) => {
-    const dr = 0.002, pente = (hauteur(r + dr) - hauteur(Math.max(0, r - dr))) / (2 * dr)
-    return new THREE.Vector3(-Math.cos(ang) * pente, 1, -Math.sin(ang) * pente).normalize()
+  // Normale de la surface au rayon r (pour poser les marqueurs à plat sur
+  // l'acier) : dessus (hauteur) ou dessous (profondeur, tournée vers le bas).
+  const normale = (r, ang, bas = false) => {
+    const f = bas ? (x => -profondeur(x)) : hauteur
+    const dr = 0.002, pente = (f(r + dr) - f(Math.max(0, r - dr))) / (2 * dr)
+    return new THREE.Vector3(-Math.cos(ang) * pente, 1, -Math.sin(ang) * pente).normalize().multiplyScalar(bas ? -1 : 1)
   }
   const matMarqueur = () => new THREE.MeshBasicMaterial({ color: 0xfff1cf, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })
   // bas = true : champ sous la coque (visible une fois l'instrument retourné).
   const poser = (r, ang, taille, note, idx, bas = false) => {
-    const y = bas ? -hauteur(r) * (H_BAS / H_HAUT) : hauteur(r)
+    const y = bas ? -profondeur(r) : hauteur(r)
     const s = bas ? -1 : 1
     const c = new THREE.Mesh(new THREE.CircleGeometry(taille, 20), cible)
     c.position.set(Math.cos(ang) * r, y + 0.002 * s, Math.sin(ang) * r)
@@ -112,7 +119,7 @@ export function creerHandpan(m, { loader, base, mobile, aniso }) {
     // pour que chaque note se voie même sur un acier sombre.
     const mk = new THREE.Mesh(new THREE.RingGeometry(taille * 0.82, taille * 0.98, 40), matMarqueur())
     mk.position.set(Math.cos(ang) * r, y + 0.003 * s, Math.sin(ang) * r)
-    mk.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normale(r, ang).multiplyScalar(s))
+    mk.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normale(r, ang, bas))
     mk.userData = { pulse: 0, bas }
     g.add(mk); marqueurs.push(mk)
     c.userData.marqueur = mk
